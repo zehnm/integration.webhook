@@ -1,5 +1,5 @@
 {
-    "_comment": "Test configuration for https://requestbin.com/r/en7n3554s0rbk/1dhvmzCHkuuvNZo9geKGsp0unHk",
+    "_comment": "Test configuration for https://requestbin.com/r/en7n3554s0rbk",
     "base_url": "https://en7n3554s0rbk.x.pipedream.net/${ROOT}",
     "ssl_ignore": true,
     "placeholders": {
@@ -23,35 +23,36 @@
         "switch" : [ {
             "entity_id": "webhook.switch.1",
             "friendly_name": "Test switch 1",
-            "commands": [
-                { "ON": "${SWITCH-1}?state=1" },
-                { "OFF": "${SWITCH-1}?state=0" }
-            ]
+            "commands": {
+                "ON": "${SWITCH-1}?state=1",
+                "OFF": "${SWITCH-1}?state=0"
+            }
         },
         {
             "entity_id": "webhook.switch.2",
             "friendly_name": "Test switch 2",
-            "commands": [
-                { "ON": {
+            "commands": {
+                "ON": {
                     "url": "${SWITCH-2}",
                     "method": "POST",
+                    "headers": {
+                        "my-special-header": "very_special"
+                    },
                     "body": {
                         "action": "on",
                         "foo": "bar"
-                        }
-                  }
+                    }
                 },
-                { "OFF": "${SWITCH-2}?state=0" },
-                { "TOGGLE": {
+                "OFF": "${SWITCH-2}?state=0",
+                "TOGGLE": {
                     "url": "${SWITCH-2}",
                     "method": "PUT",
                     "body": {
                         "action": "toggle",
                         "foo": "bar"
-                        }
-                  }
+                    }
                 }
-            ]
+            }
         }
         ]
     }

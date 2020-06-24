@@ -86,6 +86,7 @@ unix {
 DISTFILES += \
     dependencies.cfg \
     setup-schema.json \
+    setup-example.json \
     version.txt.in \
     webhook.json.in \
     README.md

@@ -41,10 +41,10 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
         WebhookEntity entity = {entityCfgMap.value("entity_id").toString(), entityType(),
                                 entityCfgMap.value("friendly_name").toString()};
 
-        for (QVariant commandCfg : entityCfgMap.value("commands").toList()) {
-            QVariantMap cmdMap = commandCfg.toMap();
-            QString     feature = cmdMap.cbegin().key();
-            QVariant    featureCfg = cmdMap.cbegin().value();
+        QVariantMap cmdMap = entityCfgMap.value("commands").toMap();
+        for (QVariantMap::const_iterator iter = cmdMap.cbegin(); iter != cmdMap.cend(); ++iter) {
+            QString  feature = iter.key();
+            QVariant featureCfg = iter.value();
             if (feature == "STATUS") {
                 // TODO(zehnm) handle STATUS
             } else {

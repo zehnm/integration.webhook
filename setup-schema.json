@@ -4,7 +4,55 @@
     "type": "object",
     "title": "YIO Integration Webhook Schema",
     "description": "Required data points to set up a Webhook integration.",
-    "default": {},
+    "definitions": {
+        "headers": {
+            "type": "object",
+            "title": "Http headers for all commands",
+            "patternProperties": {
+              "^[\\w-]+": { "type": "string" }
+            },
+            "additionalProperties": false
+        },
+        "command": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "title": "Simple GET command"
+                },
+                {
+                    "type": "object",
+                    "title": "Extended command",
+                    "properties": {
+                        "url": {
+                            "type": "string",
+                            "title": "Command url",
+                            "description": "Relative url to base_url, full dedicated url, or empty if base_url should be called"
+                        },
+                        "method": {
+                            "type": "string",
+                            "enum": [ "GET", "PUT", "POST", "DELETE" ],
+                            "title": "HTTP method"
+                        },
+                        "headers": { "$ref": "#/definitions/headers" },
+                        "body": {
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "title": "Text payload",
+                                    "description": "Automatically sets 'content-type: application/json' and can be overwritten in a header definition."
+                                },
+                                {
+                                    "type": "object",
+                                    "title": "JSON payload",
+                                    "description": "Automatically sets 'content-type: application/text' and can be overwritten in a header definition."
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    },
     "additionalProperties": true,
     "required": [
         "base_url",
@@ -14,6 +62,7 @@
         "base_url": {
             "$id": "#/properties/base_url",
             "type": "string",
+            "format": "url",
             "title": "Base url for the webhook commands",
             "description": "The base url might be combined with a relative command url. If a command url is not relative, the base url is ignored. If the base url is empty, all command urls must be a full url.",
             "default": "",
@@ -37,14 +86,7 @@
             },
             "additionalProperties": false
         },
-        "headers": {
-            "type": "object",
-            "title": "Http headers for all commands",
-            "patternProperties": {
-              "^[\\w-]+": { "type": "string" }
-            },
-            "additionalProperties": false
-        },
+        "headers": { "$ref": "#/definitions/headers" },
         "proxy": {
             "type": "object",
             "title": "Proxy definition",
@@ -90,18 +132,24 @@
                                 "type": "string"
                             },
                             "commands": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "title": "TODO define command object"
-                                }
+                                "type": "object",
+                                "properties": {
+                                    "ON": { "$ref": "#/definitions/command" },
+                                    "OFF": { "$ref": "#/definitions/command" },
+                                    "TOGGLE": { "$ref": "#/definitions/command" }
+                                },
+                                "additionalProperties": false
                             }
                         },
-                        "additionalProperties": false
+                        "additionalProperties": false,
+                        "required": [
+                            "entity_id",
+                            "friendly_name",
+                            "commands"
+                        ]
                     }
                 }
             }
         }
-
     }
 }
