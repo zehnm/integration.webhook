@@ -22,6 +22,8 @@
 
 #include "entityhandler.h"
 
+#include <math.h>
+
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLoggingCategory>
