@@ -1,0 +1,107 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "http://yio-remote.com/webhook.json",
+    "type": "object",
+    "title": "YIO Integration Webhook Schema",
+    "description": "Required data points to set up a Webhook integration.",
+    "default": {},
+    "additionalProperties": true,
+    "required": [
+        "base_url",
+        "entities"
+    ],
+    "properties": {
+        "base_url": {
+            "$id": "#/properties/base_url",
+            "type": "string",
+            "title": "Base url for the webhook commands",
+            "description": "The base url might be combined with a relative command url. If a command url is not relative, the base url is ignored. If the base url is empty, all command urls must be a full url.",
+            "default": "",
+            "examples": [
+                "http://192.168.100.2:8080/relay", "https://yourdomain.com:1234"
+            ]
+        },
+        "ssl_ignore": {
+            "$id": "#/properties/ssl_ignore",
+            "type": "boolean",
+            "title": "Disable SSL verification",
+            "description": "Set true if you want to skip SSL verification",
+            "default": false
+        },
+        "placeholders": {
+            "type": "object",
+            "title": "Key value placeholders for url, headers, body",
+            "description": "Placeholder keys must be specified as ${KEY}",
+            "patternProperties": {
+              "^[\\w-]+": { "type": "string" }
+            },
+            "additionalProperties": false
+        },
+        "headers": {
+            "type": "object",
+            "title": "Http headers for all commands",
+            "patternProperties": {
+              "^[\\w-]+": { "type": "string" }
+            },
+            "additionalProperties": false
+        },
+        "proxy": {
+            "type": "object",
+            "title": "Proxy definition",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                      "NoProxy",
+                      "DefaultProxy",
+                      "Socks5Proxy",
+                      "HttpProxy"
+                    ]
+                },
+                "hostName": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "user": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        },
+        "entities": {
+            "type": "object",
+            "title": "YIO entities mapping",
+            "properties": {
+                "switch": {
+                    "type": "array",
+                    "title": "Switch items",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entity_id": {
+                                "type": "string"
+                            },
+                            "friendly_name": {
+                                "type": "string"
+                            },
+                            "commands": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "title": "TODO define command object"
+                                }
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                }
+            }
+        }
+
+    }
+}
