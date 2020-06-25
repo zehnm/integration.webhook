@@ -9,12 +9,27 @@ It may crash at any time, leak memory, or render your YIO remote unresponsive.
 The json configuration is not finalized and WILL change!
 
 This repository might be included in the official YIO project, once basic features are implemented and the configuration is stable.
+Until then the web-configurator is unsupported, it might partially work, or not at all.
 
 ## Features
 
-Working features at the moment:
+Supported features at the moment:
 
-### Switch Entity
+- Proxy support (untested!): HTTP, Socks5
+- Http headers
+  - Global definitions and command overridable headers
+- GET, PUT, POST, DELETE
+- JSON & text body for PUT and POST messages
+- Placeholder values
+  - User definable key / value pairs
+    Common use case is to define an access token which is then used in multiple command urls.
+  - Usable in URL, headers, body
+  - Syntax: `${KEY}`
+    KEY = user key, will be replaced with defined value.
+
+## Entity Support
+
+### Switch
 
 - ON
 - OFF
@@ -22,13 +37,24 @@ Working features at the moment:
 
 Support for the power attribute is planned, but not yet implemented.
 
-### Light Entity
+### Light
 
 - ON
 - OFF
 - TOGGLE
+- BRIGHTNESS
+- COLOR
+- COLORTEMP
 
-Support for brightness & color are planned, but not yet implemented.
+## TODOs
+
+- Response mapping
+  E.g. entity attributes like brightness etc.
+- Status polling
+- Blind entity
+- Remote entity
+- Climate entity
+- Media player entity
 
 ## Configuration
 

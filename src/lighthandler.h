@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <QColor>
 #include <QMap>
 #include <QUrl>
 
@@ -42,5 +43,7 @@ class LightHandler : public EntityHandler {
     void onReply(int command, EntityInterface *entity, const QVariant &param, QNetworkReply *reply) override;
 
  private:
-    void updateEntity(EntityInterface *entity, const QVariantMap &attr);
+    void setEntityValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
+                         int colorTemp) const;
+    void updateEntity(EntityInterface *entity, int state, const QVariant &color, int brightness, int colorTemp);
 };
