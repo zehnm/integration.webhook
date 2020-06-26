@@ -55,6 +55,7 @@
             project-name: ${{ env.PROJECT_NAME }}
             output-path: ${GITHUB_WORKSPACE}/binaries/app
             qmake-args: ${{ matrix.config.qmake-args }}
+            version-file-dir: 'src'
   
         - name: Upload build artefacts
           uses: actions/upload-artifact@v1

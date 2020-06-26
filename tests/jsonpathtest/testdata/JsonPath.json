@@ -1,0 +1,27 @@
+{ "store": {
+    "electronics" : [
+    {
+        "category": "CPU",
+        "manufacturer": "AMD",
+        "title": "Ryzen 9 3900XT",
+        "price": 409.00
+    },
+    {
+        "category": "CPU",
+        "manufacturer": "AMD",
+        "title": "Ryzen 9 3950XT",
+        "price": 720.00
+    },
+    {
+        "category": "CPU",
+        "manufacturer": "Intel",
+        "title": "Core i9-10900",
+        "price": 514.00
+    }
+    ],
+    "snack": {
+      "title": "Burrito",
+      "price": 12.95
+    }
+  }
+}
