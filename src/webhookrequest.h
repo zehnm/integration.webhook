@@ -24,14 +24,21 @@
 
 #include <QByteArray>
 #include <QNetworkRequest>
+#include <QObject>
 
 #include "httpmethod.h"
+#include "webhookcommand.h"
 
 /**
  * @brief Webhook request, prepared from the configuration to create a network request.
  */
-struct WebhookRequest {
-    QNetworkRequest  networkRequest;
-    HttpMethod::Enum method;
-    QByteArray       body;
+class WebhookRequest : public QObject {
+ public:
+    explicit WebhookRequest(QObject* parent = nullptr)
+        : QObject(parent), webhookCommand(Q_NULLPTR) {}
+
+ public:
+    const WebhookCommand* webhookCommand;
+    QNetworkRequest       networkRequest;
+    QByteArray            body;
 };

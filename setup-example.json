@@ -1,12 +1,13 @@
 {
     "_comment": "Test configuration for https://requestbin.com/r/en7n3554s0rbk",
     "base_url": "https://en7n3554s0rbk.x.pipedream.net/${ROOT}",
-    "ssl_ignore": true,
+    "ssl_ignore": false,
     "placeholders": {
         "TOKEN": "secret123",
         "ROOT": "test",
         "SWITCH-1": "relay0",
-        "SWITCH-2": "relay1"
+        "SWITCH-2": "relay1",
+        "LIGHT-2": "light/1"
     },
     "proxy": {
         "type": "NoProxy",
@@ -22,7 +23,7 @@
     "entities": {
         "switch" : [ {
             "entity_id": "webhook.switch.1",
-            "friendly_name": "Test switch 1",
+            "friendly_name": "Simple switch 1",
             "commands": {
                 "ON": "${SWITCH-1}?state=1",
                 "OFF": "${SWITCH-1}?state=0"
@@ -41,19 +42,101 @@
                     "body": {
                         "action": "on",
                         "foo": "bar"
+                    },
+                    "response": {
+                        "mappings": {
+                            "state_bool": "status.on",
+                            "power": "status.power"
+                        }
                     }
                 },
-                "OFF": "${SWITCH-2}?state=0",
+                "OFF": {
+                    "url": "${SWITCH-2}",
+                    "method": "POST",
+                    "body": {
+                        "action": "off"
+                    },
+                    "response": {
+                        "mappings": {
+                            "state_bool": "status.on",
+                            "power": "status.power"
+                        }
+                    }
+                },
                 "TOGGLE": {
                     "url": "${SWITCH-2}",
                     "method": "PUT",
                     "body": {
-                        "action": "toggle",
-                        "foo": "bar"
+                        "action": "toggle"
                     }
                 }
             }
         }
+        ],
+        "light": [
+            {
+                "entity_id": "webhook.light.1",
+                "friendly_name": "Simple light 1",
+                "commands": {
+                    "ON": "light/0?state=1",
+                    "OFF": "light/0?state=0"
+                }    
+            },
+            {
+                "entity_id": "webhook.light.2",
+                "friendly_name": "Test light 2",
+                "commands": {
+                    "ON": {
+                        "url": "${LIGHT-2}",
+                        "method": "POST",
+                        "body": {
+                            "action": "on"
+                        },
+                        "response": {
+                            "mappings": {
+                                "state_bool": "device.on",
+                                "brightness_percent": "device.brightness"
+                            }
+                        }
+                    },
+                    "OFF": {
+                        "url": "${LIGHT-2}",
+                        "method": "POST",
+                        "body": {
+                            "action": "off"
+                        }
+                    },
+                    "COLOR": {
+                        "url": "${LIGHT-2}",
+                        "method": "POST",
+                        "body": {
+                            "action": "on",
+                            "color": "${color_h};${color_s};${color_v}",
+                            "mode": "hsv"
+                        },
+                        "response": {
+                            "mappings": {
+                                "state_bool": "device.on",
+                                "brightness_percent": "device.brightness"
+                            }
+                        }
+                    },
+                    "BRIGHTNESS": {
+                        "url": "${LIGHT-2}",
+                        "method": "POST",
+                        "body": {
+                            "action": "on",
+                            "brighness": "${brightness_percent}"
+                        },
+                        "response": {
+                            "mappings": {
+                                "state_bool": "device.on",
+                                "brightness_percent": "device.brightness"
+                            }
+                        }
+                    }
+                }
+            }
         ]
     }
 }

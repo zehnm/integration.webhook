@@ -80,7 +80,7 @@ class Webhook : public Integration {
     void leaveStandby() override;
 
  private:
-    void addAvailableEntities(const QList<WebhookEntity>& entities);
+    void addAvailableEntities(const QList<WebhookEntity *> &entities);
     void configureProxy(const QVariantMap& proxyCfg);
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99

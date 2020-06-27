@@ -26,16 +26,11 @@ Supported features at the moment:
   - Usable in URL, headers, body
   - Syntax: `${KEY}`
     KEY = user key, will be replaced with defined value.
+- Response mapping of Json payload with a simplified JsonPath syntax.
+  - Nested values: `foo.bar.x`
+  - Array index: `foo.bars[2].y`
 
 ## Entity Support
-
-### Switch
-
-- ON
-- OFF
-- TOGGLE
-
-Support for the power attribute is planned, but not yet implemented.
 
 ### Light
 
@@ -46,15 +41,26 @@ Support for the power attribute is planned, but not yet implemented.
 - COLOR
 - COLORTEMP
 
+Initial response mapping is implemented.
+
+### Switch
+
+- ON
+- OFF
+- TOGGLE
+
+Response mapping is not yet implemented, but comes next.
+Support for the power attribute is planned, but not yet implemented.
+
 ## TODOs
 
-- Response mapping
+- [x] Response mapping
   E.g. entity attributes like brightness etc.
-- Status polling
-- Blind entity
-- Remote entity
-- Climate entity
-- Media player entity
+- [ ] Status polling
+- [ ] Blind entity
+- [ ] Remote entity
+- [ ] Climate entity
+- [ ] Media player entity
 
 ## Configuration
 

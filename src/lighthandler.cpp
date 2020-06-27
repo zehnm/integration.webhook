@@ -22,10 +22,7 @@
 
 #include "lighthandler.h"
 
-#include <QColor>
 #include <QLoggingCategory>
-#include <QStringList>
-#include <QVariantMap>
 
 #include "yio-interface/entities/lightinterface.h"
 
@@ -78,12 +75,13 @@ WebhookRequest *LightHandler::prepareRequest(const QString &entityId, EntityInte
             return Q_NULLPTR;
     }
 
-    setEntityValues(&parameters, state, color, brightness, colorTemp);
+    setPlaceholderValues(&parameters, state, color, brightness, colorTemp);
 
     return createRequest(feature, entityId, parameters);
 }
 
-void LightHandler::onReply(int command, EntityInterface *entity, const QVariant &param, QNetworkReply *reply) {
+void LightHandler::onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+                           QNetworkReply *reply) {
     LightInterface *lightInterface = static_cast<LightInterface *>(entity->getSpecificInterface());
 
     // reflect intended state in entity. This is also required in case of a failed request!
@@ -118,16 +116,25 @@ void LightHandler::onReply(int command, EntityInterface *entity, const QVariant 
 
     updateEntity(entity, state, color, brightness, colorTemp);
 
-    // revert entity / UI state in case request failed
-    if (reply->error() != QNetworkReply::NetworkError::NoError) {
+    if (reply->error() == QNetworkReply::NoError) {
+        QVariantMap values;
+        int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
+        if (count > 0 && CLASS_LC().isDebugEnabled()) {
+            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            updateEntity(entity, values);
+        }
+    } else {
+        // revert entity / UI state in case request failed
+        // TODO(zehnm) enhance EntityInterface with refresh() option to simplify entity state -> UI reset.
         updateEntity(entity, oldState, oldColor, oldBrightness, oldColorTemp);
     }
 }
 
-void LightHandler::setEntityValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
-                                   int colorTemp) const {
-    placeholders->insert("on_bool", state == LightDef::ON);
-    placeholders->insert("on_bin", state);
+void LightHandler::setPlaceholderValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
+                                        int colorTemp) const {
+    // TODO(zehnm) define placeholder constants
+    placeholders->insert("state_bool", state == LightDef::ON);
+    placeholders->insert("state_bin", state);
     placeholders->insert("brightness_percent", brightness);
     placeholders->insert("color_temp", colorTemp);
     placeholders->insert("color_r", color.red());
@@ -138,9 +145,46 @@ void LightHandler::setEntityValues(QVariantMap *placeholders, int state, const Q
     placeholders->insert("color_v", color.value());
 }
 
+void LightHandler::updateEntity(EntityInterface *entity, const QVariantMap &placeholders) {
+    int    state = -1;
+    int    brightness = -1;
+    int    colorTemp = -1;
+    QColor color;
+
+    if (placeholders.contains("state_bool")) {
+        state = placeholders.value("state_bool").toBool() ? LightDef::ON : LightDef::OFF;
+    } else if (placeholders.contains("state_bin")) {
+        state = placeholders.value("state_bin").toInt() == 0 ? LightDef::OFF : LightDef::ON;
+    }
+
+    if (placeholders.contains("brightness_percent")) {
+        brightness = placeholders.value("brightness_percent").toInt();
+    }
+
+    // TODO(zehnm) other brightness types, e.g. float values 0.0..1.0?
+
+    if (placeholders.contains("color_temp")) {
+        colorTemp = placeholders.value("color_temp").toInt();
+    }
+
+    // TODO(zehnm) color temperature conversion? --> not yet implemented in the UI!
+
+    if (placeholders.contains("color_r")) {
+        color.setRgb(placeholders.value("color_r").toInt(), placeholders.value("color_g").toInt(),
+                     placeholders.value("color_b").toInt());
+    } else if (placeholders.contains("color_h")) {
+        color.setHsv(placeholders.value("color_h").toInt(), placeholders.value("color_s").toInt(),
+                     placeholders.value("color_v").toInt());
+    }
+
+    updateEntity(entity, state, color, brightness, colorTemp);
+}
+
 void LightHandler::updateEntity(EntityInterface *entity, int state, const QVariant &color, int brightness,
                                 int colorTemp) {
-    entity->setState(state);
+    if (state >= 0) {
+        entity->setState(state);
+    }
 
     if (brightness >= 0 && entity->isSupported(LightDef::F_BRIGHTNESS)) {
         entity->updateAttrByIndex(LightDef::BRIGHTNESS, brightness);

@@ -49,17 +49,46 @@ WebhookRequest *SwitchHandler::prepareRequest(const QString &entityId, EntityInt
     return Q_NULLPTR;
 }
 
-void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant &param, QNetworkReply *reply) {
+void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+                            QNetworkReply *reply) {
     Q_UNUSED(param)
 
-    if (!(command == SwitchDef::C_ON || command == SwitchDef::C_OFF)) {
-        return;
+    int oldState = entity->state();
+
+    if ((command == SwitchDef::C_ON || command == SwitchDef::C_OFF)) {
+        entity->setState(command == SwitchDef::C_ON ? SwitchDef::ON : SwitchDef::OFF);
     }
 
-    entity->setState(command == SwitchDef::C_ON ? SwitchDef::ON : SwitchDef::OFF);
+    if (reply->error() == QNetworkReply::NoError) {
+        QVariantMap values;
+        int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
+        if (count > 0 && CLASS_LC().isDebugEnabled()) {
+            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            updateEntity(entity, values);
+        }
+    } else {
+        // revert entity / UI state in case request failed
+        entity->setState(oldState);
+    }
+}
 
-    // revert entity / UI state in case request failed
-    if (reply->error() != QNetworkReply::NetworkError::NoError) {
-        entity->setState(command == SwitchDef::C_ON ? SwitchDef::OFF : SwitchDef::ON);
+void SwitchHandler::updateEntity(EntityInterface *entity, const QVariantMap &placeholders) {
+    int state = -1;
+
+    if (placeholders.contains("state_bool")) {
+        state = placeholders.value("state_bool").toBool() ? SwitchDef::ON : SwitchDef::OFF;
+    } else if (placeholders.contains("state_bin")) {
+        state = placeholders.value("state_bin").toInt() == 0 ? SwitchDef::OFF : SwitchDef::ON;
+    }
+
+    if (state >= 0) {
+        entity->setState(state);
+    }
+
+    if (placeholders.contains("power")) {
+        int power = placeholders.value("power").toInt();
+        if (power >= 0 && entity->isSupported(SwitchDef::F_POWER)) {
+            entity->updateAttrByIndex(SwitchDef::POWER, power);
+        }
     }
 }

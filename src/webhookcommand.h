@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <QObject>
 #include <QString>
 #include <QVariantMap>
 
@@ -30,10 +31,15 @@
 /**
  * @brief Webhook raw command data, read from the configuration.
  */
-struct WebhookCommand {
-    QString          command;
-    QString          url;
-    HttpMethod::Enum method;
-    QVariantMap      headers;
-    QVariant         body;
+class WebhookCommand : public QObject {
+ public:
+    explicit WebhookCommand(QObject* parent = nullptr) : QObject(parent), method(HttpMethod::GET) {}
+
+ public:
+    QString                command;
+    QString                url;
+    HttpMethod::Enum       method;
+    QVariantMap            headers;
+    QVariant               body;
+    QMap<QString, QString> responseMappings;
 };

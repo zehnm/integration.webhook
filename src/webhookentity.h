@@ -28,13 +28,18 @@
 
 #include "webhookcommand.h"
 
-struct WebhookEntity {
-    WebhookEntity() {}
-    WebhookEntity(const QString &id, const QString &type, const QString &friendlyName)
-        : id(id), type(type), friendlyName(friendlyName) {}
-    QString                       id;
-    QString                       type;
-    QString                       friendlyName;
-    QStringList                   supportedFeatures;
-    QMap<QString, WebhookCommand> commands;
+class WebhookEntity : public QObject {
+ public:
+    explicit WebhookEntity(QObject *parent = nullptr) : QObject(parent) {}
+    explicit WebhookEntity(const QString &id, const QString &type, const QString &friendlyName,
+                           QObject *parent = nullptr)
+        : QObject(parent), id(id), type(type), friendlyName(friendlyName) {}
+
+ public:
+    QString     id;
+    QString     type;
+    QString     friendlyName;
+    QStringList supportedFeatures;
+
+    QMap<QString, WebhookCommand *> commands;
 };

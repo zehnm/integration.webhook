@@ -107,9 +107,9 @@ void Webhook::leaveStandby() {
     // ...
 }
 
-void Webhook::addAvailableEntities(const QList<WebhookEntity> &entities) {
-    for (WebhookEntity e : entities) {
-        addAvailableEntity(e.id, e.type, integrationId(), e.friendlyName, e.supportedFeatures);
+void Webhook::addAvailableEntities(const QList<WebhookEntity *> &entities) {
+    for (WebhookEntity *e : entities) {
+        addAvailableEntity(e->id, e->type, integrationId(), e->friendlyName, e->supportedFeatures);
     }
 }
 
@@ -147,9 +147,10 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
     if (!request) {
         return;
     }
+    Q_ASSERT(request->webhookCommand);
 
     QNetworkReply *reply;
-    switch (request->method) {
+    switch (request->webhookCommand->method) {
         case HttpMethod::POST:
             reply = m_networkManager.post(request->networkRequest, request->body);
             break;
@@ -165,17 +166,18 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
 
     QObject::connect(
         reply, &QNetworkReply::finished, this, [this, entityHandler, command, entity, param, request, reply] {
-            if (reply->error() == QNetworkReply::NoError) {
-                qCDebug(m_logCategory) << "Request finished successfully:" << request->method << reply->url().url();
-            } else {
-                qCWarning(m_logCategory) << "Request failed:" << request->method << reply->url().url() << "/"
-                                         << reply->error() << "/" << reply->errorString();
-            }
-
-            delete request;  // FIXME proper cleanup
+            request->deleteLater();
             reply->deleteLater();
 
-            entityHandler->onReply(command, entity, param, reply);
+            if (reply->error() == QNetworkReply::NoError) {
+                qCDebug(m_logCategory) << "Request finished successfully:" << request->webhookCommand->method
+                                       << reply->url().url();
+            } else {
+                qCWarning(m_logCategory) << "Request failed:" << request->webhookCommand->method << reply->url().url()
+                                         << "/" << reply->error() << "/" << reply->errorString();
+            }
+
+            entityHandler->onReply(command, entity, param, request, reply);
         });
 }
 
