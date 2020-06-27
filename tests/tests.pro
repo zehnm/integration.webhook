@@ -1,3 +1,5 @@
 TEMPLATE = subdirs
 
-SUBDIRS += jsonpathtest
+SUBDIRS += \
+    jsonpathtest \
+    entityhandlertest

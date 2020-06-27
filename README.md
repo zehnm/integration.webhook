@@ -8,7 +8,7 @@ Work in progress!
 It may crash at any time, leak memory, or render your YIO remote unresponsive.  
 The json configuration is not finalized and WILL change!
 
-This repository might be included in the official YIO project, once basic features are implemented and the configuration is stable.
+This repository might be included in the official YIO project, once basic features are implemented and the configuration is stable.  
 Until then the web-configurator is unsupported, it might partially work, or not at all.
 
 ## Features
@@ -21,10 +21,10 @@ Supported features at the moment:
 - GET, PUT, POST, DELETE
 - JSON & text body for PUT and POST messages
 - Placeholder values
-  - User definable key / value pairs
+  - User definable key / value pairs  
     Common use case is to define an access token which is then used in multiple command urls.
   - Usable in URL, headers, body
-  - Syntax: `${KEY}`
+  - Syntax: `${KEY}`  
     KEY = user key, will be replaced with defined value.
 - Response mapping of Json payload with a simplified JsonPath syntax.
   - Nested values: `foo.bar.x`
@@ -49,12 +49,12 @@ Initial response mapping is implemented.
 - OFF
 - TOGGLE
 
-Response mapping is not yet implemented, but comes next.
+Response mapping is not yet implemented, but comes next.  
 Support for the power attribute is planned, but not yet implemented.
 
 ## TODOs
 
-- [x] Response mapping
+- [x] Response mapping  
   E.g. entity attributes like brightness etc.
 - [ ] Status polling
 - [ ] Blind entity
@@ -68,7 +68,7 @@ The webhook integration must be configured in config.json. The YIO web-configura
 
 Add a `webhook` configuration inside `integrations`:
 
-```
+```json
 "integrations": {
     "OTHER_INTEGRATION": {
     },
