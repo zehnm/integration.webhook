@@ -57,6 +57,7 @@ QMAKE_SUBSTITUTES += webhook.json.in version.txt.in
 # output path must be included for the output file from QMAKE_SUBSTITUTES
 INCLUDEPATH += $$OUT_PWD
 HEADERS  += webhook.h \
+    blindhandler.h \
     entityhandler.h \
     httpmethod.h \
     jsonpath.h \
@@ -66,6 +67,7 @@ HEADERS  += webhook.h \
     webhookentity.h \
     webhookrequest.h
 SOURCES  += webhook.cpp \
+    blindhandler.cpp \
     entityhandler.cpp \
     jsonpath.cpp \
     lighthandler.cpp \

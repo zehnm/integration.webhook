@@ -25,6 +25,7 @@
 #include <QNetworkProxy>
 #include <QtDebug>
 
+#include "blindhandler.h"
 #include "lighthandler.h"
 #include "switchhandler.h"
 
@@ -53,6 +54,7 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
 
     m_placeholders = map.value("placeholders").toMap();
 
+    m_handlers.insert("blind", new BlindHandler(baseUrl, this));
     m_handlers.insert("light", new LightHandler(baseUrl, this));
     m_handlers.insert("switch", new SwitchHandler(baseUrl, this));
 
