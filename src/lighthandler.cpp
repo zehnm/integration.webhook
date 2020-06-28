@@ -22,10 +22,7 @@
 
 #include "lighthandler.h"
 
-#include <QColor>
 #include <QLoggingCategory>
-#include <QStringList>
-#include <QVariantMap>
 
 #include "yio-interface/entities/lightinterface.h"
 
@@ -37,92 +34,167 @@ WebhookRequest *LightHandler::prepareRequest(const QString &entityId, EntityInte
                                              const QVariantMap &placeholders, const QVariant &param) {
     Q_UNUSED(entity)
 
+    QString         feature;
+    QVariantMap     parameters(placeholders);
+    LightInterface *lightInterface = static_cast<LightInterface *>(entity->getSpecificInterface());
+
+    // get current entity values for request parameters
+    int    state = entity->state();
+    QColor color = lightInterface->color();
+    int    colorTemp = lightInterface->colorTemp();
+    int    brightness = lightInterface->brightness();
+
     switch (command) {
         case LightDef::C_ON:
-            return createRequest("ON", entityId, placeholders);
+            feature = "ON";
+            state = LightDef::ON;
+            break;
         case LightDef::C_OFF:
-            return createRequest("OFF", entityId, placeholders);
+            feature = "OFF";
+            state = LightDef::OFF;
+            break;
         case LightDef::C_TOGGLE:
-            return createRequest("TOGGLE", entityId, placeholders);
+            feature = "TOGGLE";
+            break;
         case LightDef::C_BRIGHTNESS:
-            // TODO(zehnm) implement me! Scale & put brightness value into variable replacements
-            // data.insert("brightness_pct", param);
-            return createRequest("BRIGHTNESS", entityId, placeholders);
-        case LightDef::C_COLOR: {
-            // TODO(zehnm) implement me! Scale & put color values into variable replacements
-            QColor       color = param.value<QColor>();
-            QVariantList list;
-            list.append(color.red());
-            list.append(color.green());
-            list.append(color.blue());
-            return createRequest("COLOR", entityId, placeholders);
+            feature = "BRIGHTNESS";
+            brightness = param.toInt();
+            state = brightness > 0 ? LightDef::ON : LightDef::OFF;
+            break;
+        case LightDef::C_COLOR:
+            feature = "COLOR";
+            color = param.value<QColor>();
+            break;
+        case LightDef::C_COLORTEMP: {
+            feature = "COLORTEMP";
+            colorTemp = param.toInt();
+            break;
         }
         default:
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
+            return Q_NULLPTR;
     }
 
-    return Q_NULLPTR;
+    setPlaceholderValues(&parameters, state, color, brightness, colorTemp);
+
+    return createRequest(feature, entityId, parameters);
 }
 
-void LightHandler::onReply(int command, EntityInterface *entity, const QVariant &param, QNetworkReply *reply) {
-    Q_UNUSED(param)
+void LightHandler::onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+                           QNetworkReply *reply) {
+    LightInterface *lightInterface = static_cast<LightInterface *>(entity->getSpecificInterface());
 
-    // TODO(zehnm) implement all features
+    // reflect intended state in entity. This is also required in case of a failed request!
+    int      state = LightDef::OFF;
+    int      brightness = -1;
+    int      colorTemp = -1;
+    QVariant color;
+    int      oldState = entity->state();
+    int      oldBrightness = lightInterface->brightness();
+    int      oldColorTemp = lightInterface->colorTemp();
+    QVariant oldColor = lightInterface->color();
+
     switch (command) {
         case LightDef::C_ON:
-            entity->setState(LightDef::ON);
+            state = LightDef::ON;
             break;
         case LightDef::C_OFF:
-            entity->setState(LightDef::OFF);
+            state = LightDef::OFF;
+            break;
+        case LightDef::C_BRIGHTNESS:
+            state = LightDef::ON;
+            brightness = param.toInt();
+            break;
+        case LightDef::C_COLOR:
+            state = LightDef::ON;
+            color = param;
+            break;
+        case LightDef::C_COLORTEMP:
+            state = LightDef::ON;
             break;
     }
 
-    // revert entity / UI state in case request failed
-    if (reply->error() != QNetworkReply::NetworkError::NoError) {
-        switch (command) {
-            case LightDef::C_ON:
-                entity->setState(LightDef::OFF);
-                break;
-            case LightDef::C_OFF:
-                entity->setState(LightDef::ON);
-                break;
+    updateEntity(entity, state, color, brightness, colorTemp);
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QVariantMap values;
+        int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
+        if (count > 0 && CLASS_LC().isDebugEnabled()) {
+            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            updateEntity(entity, values);
         }
+    } else {
+        // revert entity / UI state in case request failed
+        // TODO(zehnm) enhance EntityInterface with refresh() option to simplify entity state -> UI reset.
+        updateEntity(entity, oldState, oldColor, oldBrightness, oldColorTemp);
     }
 }
 
-void LightHandler::updateEntity(EntityInterface *entity, const QVariantMap &attr) {
-    // TODO(zehnm) implement me, this is just copy pasted from HA integration!
+void LightHandler::setPlaceholderValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
+                                        int colorTemp) const {
+    // TODO(zehnm) define placeholder constants
+    placeholders->insert("state_bool", state == LightDef::ON);
+    placeholders->insert("state_bin", state);
+    placeholders->insert("brightness_percent", brightness);
+    placeholders->insert("color_temp", colorTemp);
+    placeholders->insert("color_r", color.red());
+    placeholders->insert("color_g", color.green());
+    placeholders->insert("color_b", color.blue());
+    placeholders->insert("color_h", color.hue());
+    placeholders->insert("color_s", color.saturation());
+    placeholders->insert("color_v", color.value());
+}
 
-    // state
-    if (attr.value("state").toString() == "on") {
-        entity->setState(LightDef::ON);
-    } else {
-        entity->setState(LightDef::OFF);
+void LightHandler::updateEntity(EntityInterface *entity, const QVariantMap &placeholders) {
+    int    state = -1;
+    int    brightness = -1;
+    int    colorTemp = -1;
+    QColor color;
+
+    if (placeholders.contains("state_bool")) {
+        state = placeholders.value("state_bool").toBool() ? LightDef::ON : LightDef::OFF;
+    } else if (placeholders.contains("state_bin")) {
+        state = placeholders.value("state_bin").toInt() == 0 ? LightDef::OFF : LightDef::ON;
     }
 
-    QVariantMap haAttr = attr.value("attributes").toMap();
-    // brightness
-    if (entity->isSupported(LightDef::F_BRIGHTNESS)) {
-        if (haAttr.contains("brightness")) {
-            entity->updateAttrByIndex(LightDef::BRIGHTNESS,
-                                      convertBrightnessToPercentage(haAttr.value("brightness").toInt()));
-        } else {
-            entity->updateAttrByIndex(LightDef::BRIGHTNESS, 0);
-        }
+    if (placeholders.contains("brightness_percent")) {
+        brightness = placeholders.value("brightness_percent").toInt();
     }
 
-    // color
-    if (entity->isSupported(LightDef::F_COLOR)) {
-        QVariant     color = haAttr.value("rgb_color");
-        QVariantList cl(color.toList());
-        char         buffer[10];
-        snprintf(buffer, sizeof(buffer), "#%02X%02X%02X", cl.value(0).toInt(), cl.value(1).toInt(),
-                 cl.value(2).toInt());
-        entity->updateAttrByIndex(LightDef::COLOR, buffer);
+    // TODO(zehnm) other brightness types, e.g. float values 0.0..1.0?
+
+    if (placeholders.contains("color_temp")) {
+        colorTemp = placeholders.value("color_temp").toInt();
     }
 
-    // color temp
-    if (entity->isSupported(LightDef::F_COLORTEMP)) {
-        // FIXME implement me!
+    // TODO(zehnm) color temperature conversion? --> not yet implemented in the UI!
+
+    if (placeholders.contains("color_r")) {
+        color.setRgb(placeholders.value("color_r").toInt(), placeholders.value("color_g").toInt(),
+                     placeholders.value("color_b").toInt());
+    } else if (placeholders.contains("color_h")) {
+        color.setHsv(placeholders.value("color_h").toInt(), placeholders.value("color_s").toInt(),
+                     placeholders.value("color_v").toInt());
+    }
+
+    updateEntity(entity, state, color, brightness, colorTemp);
+}
+
+void LightHandler::updateEntity(EntityInterface *entity, int state, const QVariant &color, int brightness,
+                                int colorTemp) {
+    if (state >= 0) {
+        entity->setState(state);
+    }
+
+    if (brightness >= 0 && entity->isSupported(LightDef::F_BRIGHTNESS)) {
+        entity->updateAttrByIndex(LightDef::BRIGHTNESS, brightness);
+    }
+
+    if (color.isValid() && entity->isSupported(LightDef::F_COLOR)) {
+        entity->updateAttrByIndex(LightDef::COLOR, color);
+    }
+
+    if (colorTemp >= 0 && entity->isSupported(LightDef::F_COLORTEMP)) {
+        entity->updateAttrByIndex(LightDef::COLORTEMP, colorTemp);
     }
 }

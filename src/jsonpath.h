@@ -22,29 +22,23 @@
 
 #pragma once
 
-#include <QColor>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QObject>
+#include <QString>
+#include <QVariant>
 
-#include "entityhandler.h"
-
-class LightHandler : public EntityHandler {
+class JsonPath : public QObject {
     Q_OBJECT
 
  public:
-    explicit LightHandler(const QString &baseUrl, QObject *parent = nullptr);
+    explicit JsonPath(const QJsonDocument &jsonDoc, QObject *parent = nullptr);
 
-    // EntityHandler interface
- public:
-    WebhookRequest *prepareRequest(const QString &entityId, EntityInterface *entity, int command,
-                                   const QVariantMap &placeholders, const QVariant &param) override;
-
-    void onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
-                 QNetworkReply *reply) override;
+    QVariant value(const QString &path, QVariant defaultValue = QVariant()) const;
 
  private:
-    void setPlaceholderValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
-                              int colorTemp) const;
+    QJsonValue nextObjectSegment(const QJsonValue &currNode, const QString &key) const;
 
-    void updateEntity(EntityInterface *entity, const QVariantMap &placeholders);
-
-    void updateEntity(EntityInterface *entity, int state, const QVariant &color, int brightness, int colorTemp);
+    QJsonValue m_root;
 };

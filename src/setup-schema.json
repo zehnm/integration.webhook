@@ -47,6 +47,20 @@
                                     "description": "Automatically sets 'content-type: application/text' and can be overwritten in a header definition."
                                 }
                             ]
+                        },
+                        "response" : {
+                            "type": "object",
+                            "properties": {
+                                "mappings": {
+                                    "type": "object",
+                                    "title": "Response mappings",
+                                    "description": "JSON payload mapping to entity attributes with JsonPath.",
+                                    "propertyNames": {"enum": ["state_bool", "state_bin", "power", "brightness_percent", "color_temp", "color_r", "color_g", "color_b", "color_h", "color_s", "color_v"]},
+                                    "patternProperties": {
+                                      "": { "type": "string" }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -133,10 +147,38 @@
                             },
                             "commands": {
                                 "type": "object",
-                                "properties": {
-                                    "ON": { "$ref": "#/definitions/command" },
-                                    "OFF": { "$ref": "#/definitions/command" },
-                                    "TOGGLE": { "$ref": "#/definitions/command" }
+                                "propertyNames": { "enum": [ "ON", "OFF", "TOGGLE" ] },
+                                "patternProperties": {
+                                  "": { "$ref": "#/definitions/command" }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                            "entity_id",
+                            "friendly_name",
+                            "commands"
+                        ]
+                    }
+                },
+                "light": {
+                    "type": "array",
+                    "title": "Light items",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entity_id": {
+                                "type": "string"
+                            },
+                            "friendly_name": {
+                                "type": "string"
+                            },
+                            "commands": {
+                                "type": "object",
+                                "propertyNames": { "enum": [ "ON", "OFF", "TOGGLE", "BRIGHTNESS", "COLOR", "COLORTEMP" ] },
+                                "patternProperties": {
+                                  "": { "$ref": "#/definitions/command" }
                                 },
                                 "additionalProperties": false
                             }

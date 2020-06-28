@@ -20,7 +20,7 @@ env:
   # QT_CREATOR_VERSION: 4.11.0
   APP_PRO: webhook.pro
   APP_NAME: libwebhook
-  PROJECT_NAME: integration.home-assistant
+  PROJECT_NAME: integration.webhook
   # Build artifact output path. Used to set project specific YIO_BIN env var in 'qt_creator' step.
   BIN_OUTPUT_PATH: "binaries"
   DEBUG_OUTPUT: "false"
@@ -368,8 +368,31 @@ jobs:
           COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/webhook.json $ENV{YIO_BIN}
         )
         execute_process(
-          COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/version.txt $ENV{YIO_BIN}
+          COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/src/version.txt $ENV{YIO_BIN}
         )
+
+    - name: Unit Tests
+      shell: cmake -P {0}
+      run: |
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(ENV{PATH} "${{ steps.qt.outputs.qt_dir }}/bin/;$ENV{PATH}")
+        else()
+          set(ENV{PATH} "${{ steps.qt.outputs.qt_dir }}/bin/:$ENV{PATH}")
+        endif()
+
+        set(make_program make -j ${N})
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(make_program "$ENV{GITHUB_WORKSPACE}/qtcreator/bin/jom")
+        endif()
+
+        execute_process(
+          COMMAND ${make_program} check
+          WORKING_DIRECTORY $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}
+          RESULT_VARIABLE result
+        )
+        if (NOT result EQUAL 0)
+          message(FATAL_ERROR "Unit tests failed")
+        endif()
 
     - name: Set build artifact name
       shell: bash

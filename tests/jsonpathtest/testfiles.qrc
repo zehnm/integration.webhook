@@ -1,0 +1,10 @@
+<RCC>
+    <qresource>
+        <file>testdata/JsonPath.json</file>
+        <file>testdata/myStrom-bulb-setcolor-response.json</file>
+        <file>testdata/myStrom-bulb-turnon-response.json</file>
+        <file>testdata/myStrom-switch-report-response.json</file>
+        <file>testdata/myStrom-switch-temp-response.json</file>
+        <file>testdata/myStrom-switch-toggle-response.json</file>
+    </qresource>
+</RCC>

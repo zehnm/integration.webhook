@@ -24,9 +24,10 @@
 
 #include <math.h>
 
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QLoggingCategory>
+#include <QRegularExpression>
+
+#include "jsonpath.h"
 
 // TODO(zehnm) set logging category from concrete class
 static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook");
@@ -37,47 +38,57 @@ EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, 
 int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVariantMap &headers) {
     int count = 0;
     for (QVariant entityCfg : entityCfgList) {
-        QVariantMap   entityCfgMap = entityCfg.toMap();
-        WebhookEntity entity = {entityCfgMap.value("entity_id").toString(), entityType(),
-                                entityCfgMap.value("friendly_name").toString()};
+        QVariantMap    entityCfgMap = entityCfg.toMap();
+        WebhookEntity *entity = new WebhookEntity(entityCfgMap.value("entity_id").toString(), entityType(),
+                                                  entityCfgMap.value("friendly_name").toString(), this);
 
-        QVariantMap cmdMap = entityCfgMap.value("commands").toMap();
-        for (QVariantMap::const_iterator iter = cmdMap.cbegin(); iter != cmdMap.cend(); ++iter) {
+        QMapIterator<QString, QVariant> iter(entityCfgMap.value("commands").toMap());
+        while (iter.hasNext()) {
+            iter.next();
             QString  feature = iter.key();
             QVariant featureCfg = iter.value();
             if (feature == "STATUS") {
                 // TODO(zehnm) handle STATUS
             } else {
-                entity.supportedFeatures.append(feature);
+                entity->supportedFeatures.append(feature);
             }
 
-            WebhookCommand command;
-            command.headers = headers;
+            WebhookCommand *command = new WebhookCommand(this);
+            command->headers = headers;
             if (featureCfg.type() == QVariant::String) {
                 // simple GET command without any options
-                command.url = featureCfg.toString();
-                command.method = HttpMethod::GET;
+                command->url = featureCfg.toString();
+                command->method = HttpMethod::GET;
             } else {
                 // the full package
                 QVariantMap attrMap = featureCfg.toMap();
 
-                command.url = attrMap.value("url").toString();
-                command.method = stringToEnum<HttpMethod::Enum>(attrMap.value("method").toString(), HttpMethod::GET);
+                command->url = attrMap.value("url").toString();
+                command->method = stringToEnum<HttpMethod::Enum>(attrMap.value("method").toString(), HttpMethod::GET);
 
-                if (command.method != HttpMethod::GET) {
-                    command.body = attrMap.value("body");
-                    QVariantMap cmdHeaders = attrMap.value("headers").toMap();
+                if (command->method != HttpMethod::GET) {
+                    command->body = attrMap.value("body");
                     // Attention: QMap.unite inserts the same key multiple times instead of replacing it!
-                    for (QVariantMap::const_iterator iter = cmdHeaders.cbegin(); iter != cmdHeaders.cend(); ++iter) {
-                        command.headers.insert(iter.key(), iter.value());
+                    QMapIterator<QString, QVariant> iter(attrMap.value("headers").toMap());
+                    while (iter.hasNext()) {
+                        iter.next();
+                        command->headers.insert(iter.key(), iter.value());
+                    }
+                }
+
+                if (attrMap.contains("response")) {
+                    QMapIterator<QString, QVariant> iter(attrMap.value("response").toMap().value("mappings").toMap());
+                    while (iter.hasNext()) {
+                        iter.next();
+                        command->responseMappings.insert(iter.key(), iter.value().toString());
                     }
                 }
             }
-            entity.commands.insert(feature, command);
+            entity->commands.insert(feature, command);
         }
 
         count++;
-        m_webhookEntities.insert(entity.id, entity);
+        m_webhookEntities.insert(entity->id, entity);
     }
 
     return count;
@@ -88,25 +99,51 @@ int EntityHandler::convertBrightnessToPercentage(float value) const {
     return static_cast<int>(round(value / 255 * 100));
 }
 
-QString EntityHandler::replace(const QString &text, const QVariantMap &placeholders) const {
-    QString newText = text;
-    for (QVariantMap::const_iterator iter = placeholders.cbegin(); iter != placeholders.cend(); ++iter) {
-        QString marker = QString("${%1}").arg(iter.key());
-        if (newText.contains(marker)) {
-            newText.replace(marker, iter.value().toString());
+QString EntityHandler::resolveVariables(const QString &text, const QVariantMap &placeholders) const {
+    if (placeholders.isEmpty()) {
+        return text;
+    }
+
+    QString resolved = text;
+
+    // Simplified c printf regex supporting decimal and hex only. Good enough for now :-)
+    // For strict parsing and supporting floats:
+    // "\\$\\{(\\w+)(:(%(?:\\d+\\$)?[+-]?(?:[ 0]|'.{1})?-?\\d*(?:\\.\\d+)?[dfFxX]))?\\}"
+    // http://www.cplusplus.com/reference/cstdio/printf/
+    QRegularExpression              markerRegEx("\\$\\{(\\w+)(:(%\\w*[dxX]))?\\}");
+    QRegularExpressionMatchIterator i = markerRegEx.globalMatch(text);
+    while (i.hasNext()) {
+        QRegularExpressionMatch match = i.next();
+        QString                 varName = match.captured(1);
+        QString                 format = match.captured(3);
+
+        if (placeholders.contains(varName)) {
+            if (format.isEmpty()) {
+                resolved.replace(match.captured(0), placeholders.value(varName).toString());
+            } else {
+                bool ok;
+                int  number = placeholders.value(varName).toInt(&ok);
+                if (!ok) {
+                    qCWarning(CLASS_LC) << "Variable format only supports numbers! Value:"
+                                        << placeholders.value(varName) << ", placeholder:" << match.captured(0);
+                } else {
+                    QString formattedValue = QString::asprintf(qPrintable(format), number);
+                    resolved.replace(match.captured(0), formattedValue);
+                }
+            }
         }
     }
 
-    return newText;
+    return resolved;
 }
 
 QUrl EntityHandler::buildUrl(const QVariant &commandUrl, const QVariantMap &placeholders) const {
-    QString baseUrl = replace(m_baseUrl, placeholders);
+    QString baseUrl = resolveVariables(m_baseUrl, placeholders);
     if (!commandUrl.isValid()) {
         return baseUrl;
     }
 
-    QUrl url = replace(commandUrl.toString(), placeholders);
+    QUrl url = resolveVariables(commandUrl.toString(), placeholders);
     if (url.isRelative()) {
         return QUrl(baseUrl).resolved(url);
     }
@@ -115,39 +152,69 @@ QUrl EntityHandler::buildUrl(const QVariant &commandUrl, const QVariantMap &plac
 
 WebhookRequest *EntityHandler::createRequest(const QString &commandName, const QString &entityId,
                                              const QVariantMap &placeholders) const {
-    //    qCDebug(CLASS_LC) << "REST command:" << m_url << service << entityId << data;
-
     if (!m_webhookEntities.contains(entityId)) {
         qCWarning(CLASS_LC) << "Entity not found:" << entityId;
         return Q_NULLPTR;
     }
 
-    WebhookEntity entity = m_webhookEntities.value(entityId);
-    if (!entity.commands.contains(commandName)) {
+    WebhookEntity *entity = m_webhookEntities.value(entityId);
+    if (!entity->commands.contains(commandName)) {
         qCWarning(CLASS_LC) << "Command" << commandName << "not defined for entity:" << entityId;
         return Q_NULLPTR;
     }
-    WebhookCommand command = entity.commands.value(commandName);
+    WebhookCommand *command = entity->commands.value(commandName);
 
     WebhookRequest *request = new WebhookRequest();
-    request->networkRequest.setUrl(buildUrl(command.url, placeholders));
-    request->method = command.method;
+    request->webhookCommand = command;
+    request->networkRequest.setUrl(buildUrl(command->url, placeholders));
 
-    if (command.body.isValid()) {
-        if (command.body.type() == QVariant::Map) {
-            QJsonDocument jsonDoc = QJsonDocument::fromVariant(command.body);
-            request->body.append(replace(jsonDoc.toJson(QJsonDocument::Compact), placeholders));
+    if (command->body.isValid()) {
+        if (command->body.type() == QVariant::Map) {
+            QJsonDocument jsonDoc = QJsonDocument::fromVariant(command->body);
+            request->body.append(resolveVariables(jsonDoc.toJson(QJsonDocument::Compact), placeholders));
             request->networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         } else {
-            request->body.append(replace(command.body.toString(), placeholders));
+            request->body.append(resolveVariables(command->body.toString(), placeholders));
             request->networkRequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/text");
         }
     }
 
-    for (QString headerName : command.headers.keys()) {
-        QString headerValue = replace(command.headers.value(headerName).toString(), placeholders);
+    for (QString headerName : command->headers.keys()) {
+        QString headerValue = resolveVariables(command->headers.value(headerName).toString(), placeholders);
         request->networkRequest.setRawHeader(headerName.toUtf8(), headerValue.toUtf8());
     }
 
     return request;
+}
+
+int EntityHandler::retrieveResponseValues(QNetworkReply *reply, const QMap<QString, QString> &mappings,
+                                          QVariantMap *values) {
+    QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
+    if (contentType.startsWith("application/json")) {
+        QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
+        return retrieveResponseValues(jsonDoc, mappings, values);
+    }
+
+    qCDebug(CLASS_LC) << "Response mapping not yet implemented for content type:" << contentType;
+
+    return 0;
+}
+
+int EntityHandler::retrieveResponseValues(const QJsonDocument &jsonDoc, const QMap<QString, QString> &mappings,
+                                          QVariantMap *values) {
+    int      count = 0;
+    JsonPath jsonPath(jsonDoc);
+
+    QMapIterator<QString, QString> iter(mappings);
+    while (iter.hasNext()) {
+        iter.next();
+
+        QVariant value = jsonPath.value(iter.value());
+        if (value.isValid()) {
+            count++;
+            values->insert(iter.key(), value);
+        }
+    }
+
+    return count;
 }

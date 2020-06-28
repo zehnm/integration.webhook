@@ -22,12 +22,15 @@
 
 #pragma once
 
+#include <QJsonDocument>
 #include <QList>
+#include <QMap>
 #include <QMetaEnum>
 #include <QNetworkReply>
 #include <QObject>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 #include "webhookentity.h"
 #include "webhookrequest.h"
@@ -43,20 +46,26 @@ class EntityHandler : public QObject {
 
     int readEntities(const QVariantList& entityCfgList, const QVariantMap& headers);
 
-    QList<WebhookEntity> getEntities() const { return m_webhookEntities.values(); }
+    QList<WebhookEntity*> getEntities() const { return m_webhookEntities.values(); }
 
     virtual WebhookRequest* prepareRequest(const QString& entityId, EntityInterface* entity, int command,
                                            const QVariantMap& placeholders, const QVariant& param) = 0;
 
-    virtual void onReply(int command, EntityInterface* entity, const QVariant& param, QNetworkReply* reply) = 0;
+    virtual void onReply(int command, EntityInterface* entity, const QVariant& param, const WebhookRequest* request,
+                         QNetworkReply* reply) = 0;
 
  protected:
     QUrl    buildUrl(const QVariant& commandUrl, const QVariantMap& placeholders) const;
     int     convertBrightnessToPercentage(float value) const;
-    QString replace(const QString& text, const QVariantMap& placeholders) const;
+    QString resolveVariables(const QString& text, const QVariantMap& placeholders) const;
 
     WebhookRequest* createRequest(const QString& commandName, const QString& entityId,
                                   const QVariantMap& placeholders) const;
+
+    int retrieveResponseValues(QNetworkReply* reply, const QMap<QString, QString>& mappings, QVariantMap* values);
+
+    int retrieveResponseValues(const QJsonDocument& jsonDoc, const QMap<QString, QString>& mappings,
+                               QVariantMap* values);
 
     template <class EnumClass>
     EnumClass stringToEnum(const QString& enumString, const EnumClass& defaultValue) const {
@@ -70,5 +79,5 @@ class EntityHandler : public QObject {
     QString m_entityType;
     QString m_baseUrl;
 
-    QMap<QString, WebhookEntity> m_webhookEntities;
+    QMap<QString, WebhookEntity*> m_webhookEntities;
 };

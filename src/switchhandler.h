@@ -35,5 +35,9 @@ class SwitchHandler : public EntityHandler {
     WebhookRequest *prepareRequest(const QString &entityId, EntityInterface *entity, int command,
                                    const QVariantMap &placeholders, const QVariant &param) override;
 
-    void onReply(int command, EntityInterface *entity, const QVariant &param, QNetworkReply *reply) override;
+    void onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+                 QNetworkReply *reply) override;
+
+ private:
+    void updateEntity(EntityInterface *entity, const QVariantMap &placeholders);
 };
