@@ -25,6 +25,7 @@
 #include <math.h>
 
 #include <QLoggingCategory>
+#include <QRegularExpression>
 
 #include "jsonpath.h"
 
@@ -99,18 +100,41 @@ int EntityHandler::convertBrightnessToPercentage(float value) const {
 }
 
 QString EntityHandler::resolveVariables(const QString &text, const QVariantMap &placeholders) const {
-    QString newText = text;
+    if (placeholders.isEmpty()) {
+        return text;
+    }
 
-    QMapIterator<QString, QVariant> iter(placeholders);
-    while (iter.hasNext()) {
-        iter.next();
-        QString marker = QString("${%1}").arg(iter.key());
-        if (newText.contains(marker)) {
-            newText.replace(marker, iter.value().toString());
+    QString resolved = text;
+
+    // Simplified c printf regex supporting decimal and hex only. Good enough for now :-)
+    // For strict parsing and supporting floats:
+    // "\\$\\{(\\w+)(:(%(?:\\d+\\$)?[+-]?(?:[ 0]|'.{1})?-?\\d*(?:\\.\\d+)?[dfFxX]))?\\}"
+    // http://www.cplusplus.com/reference/cstdio/printf/
+    QRegularExpression              markerRegEx("\\$\\{(\\w+)(:(%\\w*[dxX]))?\\}");
+    QRegularExpressionMatchIterator i = markerRegEx.globalMatch(text);
+    while (i.hasNext()) {
+        QRegularExpressionMatch match = i.next();
+        QString                 varName = match.captured(1);
+        QString                 format = match.captured(3);
+
+        if (placeholders.contains(varName)) {
+            if (format.isEmpty()) {
+                resolved.replace(match.captured(0), placeholders.value(varName).toString());
+            } else {
+                bool ok;
+                int  number = placeholders.value(varName).toInt(&ok);
+                if (!ok) {
+                    qCWarning(CLASS_LC) << "Variable format only supports numbers! Value:"
+                                        << placeholders.value(varName) << ", placeholder:" << match.captured(0);
+                } else {
+                    QString formattedValue = QString::asprintf(qPrintable(format), number);
+                    resolved.replace(match.captured(0), formattedValue);
+                }
+            }
         }
     }
 
-    return newText;
+    return resolved;
 }
 
 QUrl EntityHandler::buildUrl(const QVariant &commandUrl, const QVariantMap &placeholders) const {

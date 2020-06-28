@@ -6,7 +6,7 @@ Work in progress!
 
 > This is not a stable version, consider it an alpha testing version!  
 It may crash at any time, leak memory, or render your YIO remote unresponsive.  
-The json configuration is not finalized and WILL change!
+The json configuration is not finalized and will most likely change!
 
 This repository might be included in the official YIO project, once basic features are implemented and the configuration is stable.  
 Until then the web-configurator is unsupported, it might partially work, or not at all.
@@ -24,8 +24,20 @@ Supported features at the moment:
   - User definable key / value pairs  
     Common use case is to define an access token which is then used in multiple command urls.
   - Usable in URL, headers, body
-  - Syntax: `${KEY}`  
-    KEY = user key, will be replaced with defined value.
+  - Simple replacement: `${KEY}`
+    - `KEY`: user key, will be replaced with defined value.
+  - With number format specifier: `${KEY:FORMAT}`
+    - `KEY`: user key, will be replaced with formatted value.
+    - `FORMAT`: simplified C printf syntax, supporting decimal and hex values only!  
+      `%[flags][width]specifier`
+      - `flags`:
+        - `(space)`: blank space is inserted before the value
+        - `0`: Left-pads the number with zeroes (0) instead of spaces when padding is specified (see width sub-specifier).
+      - `width`: Minimum number of characters to be printed. If the value to be printed is shorter than this number, the result is padded with blank spaces. The value is not truncated even if the result is larger.
+      - `specifier`: `d` = decimal, `x` = lower case hex, `X` = upper case hex
+  - Examples:
+    - `http://${HOST}/${ROOT}`: with HOST=localhost, ROOT=api/ => `http://localhost/api/` 
+    - `#${color_r:%02X}${color_g:%02X}${color_b:%02X}`: with RGB(8,15,240) => `#080FF0`
 - Response mapping of Json payload with a simplified JsonPath syntax.
   - Nested values: `foo.bar.x`
   - Array index: `foo.bars[2].y`
@@ -43,14 +55,34 @@ Supported features at the moment:
 
 Initial response mapping is implemented.
 
+Note: COLORTEMP is not yet supported in the UI afaik.
+
+#### Placeholders
+
+- state_bool
+- state_bin
+- brightness_percent
+- color_temp
+- color_r
+- color_g
+- color_b
+- color_h
+- color_s
+- color_v
+
 ### Switch
 
 - ON
 - OFF
 - TOGGLE
 
-Response mapping is not yet implemented, but comes next.  
-Support for the power attribute is planned, but not yet implemented.
+Initial response mapping is implemented with support for the power attribute.
+
+#### Placeholders
+
+- state_bool
+- state_bin
+- power
 
 ## TODOs
 
@@ -78,14 +110,14 @@ Add a `webhook` configuration inside `integrations`:
                 "id": "webhook.1",
                 "friendly_name": "MyWebhook for server A",
                 "data": {
-                    SEE setup-schema.json
+                    "SEE setup-schema.json": {}
                 }
             },
             {
                 "id": "webhook.2",
                 "friendly_name": "MyWebhook for server B",
                 "data": {
-                    SEE setup-schema.json
+                    "SEE setup-schema.json": {}
                 }
             }
         ]

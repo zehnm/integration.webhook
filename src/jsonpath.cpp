@@ -23,7 +23,7 @@
 #include "jsonpath.h"
 
 #include <QJsonArray>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStringList>
 
 JsonPath::JsonPath(const QJsonDocument &jsonDoc, QObject *parent) : QObject(parent) {
@@ -43,11 +43,12 @@ QVariant JsonPath::value(const QString &path, QVariant defaultValue) const {
     QJsonValue  currNode = m_root;
     bool        error = false;
 
-    QRegExp arrayRegEx("(\\w*)\\[(\\d+)\\]$");
+    QRegularExpression arrayRegEx("(\\w*)\\[(\\d+)\\]$");
 
     for (auto segment : segments) {
-        if (arrayRegEx.indexIn(segment) != -1) {
-            QString objectName = arrayRegEx.cap(1);
+        QRegularExpressionMatch match = arrayRegEx.match(segment);
+        if (match.hasMatch()) {
+            QString objectName = match.captured(1);
             if (!objectName.isEmpty()) {
                 currNode = nextObjectSegment(currNode, objectName);
                 if (currNode == QJsonValue::Undefined) {
@@ -56,7 +57,7 @@ QVariant JsonPath::value(const QString &path, QVariant defaultValue) const {
             }
 
             bool ok = false;
-            int  index = arrayRegEx.cap(2).toInt(&ok);
+            int  index = match.captured(2).toInt(&ok);
             if (!ok || !currNode.isArray()) {
                 return defaultValue;
             }
