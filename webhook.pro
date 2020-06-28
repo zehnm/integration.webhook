@@ -2,9 +2,7 @@ TEMPLATE = subdirs
 
 SUBDIRS += src
 
-CONFIG(debug, debug|release) {
-    SUBDIRS += tests
-}
+win32|if(unix:!cross_compile): SUBDIRS += tests
 
 DISTFILES += \
     dependencies.cfg \

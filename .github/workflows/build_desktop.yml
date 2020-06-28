@@ -371,6 +371,29 @@ jobs:
           COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/src/version.txt $ENV{YIO_BIN}
         )
 
+    - name: Unit Tests
+      shell: cmake -P {0}
+      run: |
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(ENV{PATH} "${{ steps.qt.outputs.qt_dir }}/bin/;$ENV{PATH}")
+        else()
+          set(ENV{PATH} "${{ steps.qt.outputs.qt_dir }}/bin/:$ENV{PATH}")
+        endif()
+
+        set(make_program make -j ${N})
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(make_program "$ENV{GITHUB_WORKSPACE}/qtcreator/bin/jom")
+        endif()
+
+        execute_process(
+          COMMAND ${make_program} check
+          WORKING_DIRECTORY $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}
+          RESULT_VARIABLE result
+        )
+        if (NOT result EQUAL 0)
+          message(FATAL_ERROR "Unit tests failed")
+        endif()
+
     - name: Set build artifact name
       shell: bash
       run: |
