@@ -142,6 +142,9 @@
         {
             "entity_id": "webhook.blind.1",
             "friendly_name": "Blind office",
+            "attributes": {
+                "invert_position": true
+            },
             "commands": {
                 "OPEN": {
                     "url": "roller/0?go=open"

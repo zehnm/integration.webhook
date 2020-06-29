@@ -40,7 +40,8 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
     for (QVariant entityCfg : entityCfgList) {
         QVariantMap    entityCfgMap = entityCfg.toMap();
         WebhookEntity *entity = new WebhookEntity(entityCfgMap.value("entity_id").toString(), entityType(),
-                                                  entityCfgMap.value("friendly_name").toString(), this);
+                                                  entityCfgMap.value("friendly_name").toString(),
+                                                  entityCfgMap.value("attributes").toMap(), this);
 
         QMapIterator<QString, QVariant> iter(entityCfgMap.value("commands").toMap());
         while (iter.hasNext()) {

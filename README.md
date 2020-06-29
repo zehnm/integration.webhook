@@ -91,8 +91,6 @@ Initial response mapping is implemented with support for the power attribute.
 - STOP
 - POSITION
 
-Option to invert position is not yet implemented. E.g. Shelly 2.5 must be inverted to be in sync with the remote UI.
-
 #### Placeholders
 
 - position_percent
@@ -103,7 +101,7 @@ Option to invert position is not yet implemented. E.g. Shelly 2.5 must be invert
   E.g. entity attributes like brightness etc.
 - [ ] Status polling
 - [x] Blind entity
-  - [ ] Invert position option
+  - [x] Invert position option
 - [ ] Remote entity
 - [ ] Climate entity
 - [ ] Media player entity

@@ -39,8 +39,11 @@ class BlindHandler : public EntityHandler {
                  QNetworkReply *reply) override;
 
  private:
+    bool isConvertPosition(const QString &entityId);
+
+    int convertPosition(int position) const;
     void setPlaceholderValues(QVariantMap *placeholders, int state, int position) const;
     void updateEntity(EntityInterface *entity, const QVariantMap &placeholders);
 
-    void updateEntity(EntityInterface *entity, int state, int position);
+    void updateEntity(EntityInterface *entity, int state, int position, bool convert = true);
 };

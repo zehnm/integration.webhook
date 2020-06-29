@@ -63,6 +63,8 @@ WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInte
             return Q_NULLPTR;
     }
 
+    position = convertPosition(position);
+
     setPlaceholderValues(&parameters, state, position);
 
     return createRequest(feature, entityId, parameters);
@@ -91,7 +93,7 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
             break;
     }
 
-    updateEntity(entity, state, position);
+    updateEntity(entity, state, position, false);  // no conversion of UI position!
 
     if (reply->error() == QNetworkReply::NoError) {
         QVariantMap values;
@@ -103,8 +105,24 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
     } else {
         // revert entity / UI state in case request failed
         // TODO(zehnm) enhance EntityInterface with refresh() option to simplify entity state -> UI reset.
-        updateEntity(entity, oldState, oldPosition);
+        updateEntity(entity, oldState, oldPosition, false);
     }
+}
+
+bool BlindHandler::isConvertPosition(const QString &entityId) {
+    WebhookEntity *entity = m_webhookEntities.value(entityId);
+    if (!entity) {
+        return false;
+    }
+    return entity->attributes.value("invert_position", false).toBool();
+}
+
+int BlindHandler::convertPosition(int position) const {
+    if (position < 0 || position > 100) {
+        return position;
+    }
+
+    return 100 - position;
 }
 
 void BlindHandler::setPlaceholderValues(QVariantMap *placeholders, int state, int position) const {
@@ -131,12 +149,15 @@ void BlindHandler::updateEntity(EntityInterface *entity, const QVariantMap &plac
     updateEntity(entity, state, position);
 }
 
-void BlindHandler::updateEntity(EntityInterface *entity, int state, int position) {
+void BlindHandler::updateEntity(EntityInterface *entity, int state, int position, bool convert) {
     if (state >= 0) {
         entity->setState(state);
     }
 
     if (position >= 0 && entity->isSupported(BlindDef::F_POSITION)) {
+        if (convert && isConvertPosition(entity->entity_id())) {
+            position = convertPosition(position);
+        }
         entity->updateAttrByIndex(BlindDef::POSITION, position);
     }
 }

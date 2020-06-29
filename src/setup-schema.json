@@ -203,8 +203,13 @@
                             "friendly_name": {
                                 "type": "string"
                             },
-                            "invert_position": {
-                                "type": "boolean"
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "invert_position": {
+                                        "type": "boolean"
+                                    }
+                                }
                             },
                             "commands": {
                                 "type": "object",
