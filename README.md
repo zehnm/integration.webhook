@@ -84,12 +84,26 @@ Initial response mapping is implemented with support for the power attribute.
 - state_bin
 - power
 
+### Blind
+
+- OPEN
+- CLOSE
+- STOP
+- POSITION
+
+Option to invert position is not yet implemented. E.g. Shelly 2.5 must be inverted to be in sync with the remote UI.
+
+#### Placeholders
+
+- position_percent
+
 ## TODOs
 
 - [x] Response mapping  
   E.g. entity attributes like brightness etc.
 - [ ] Status polling
-- [ ] Blind entity
+- [x] Blind entity
+  - [ ] Invert position option
 - [ ] Remote entity
 - [ ] Climate entity
 - [ ] Media player entity
