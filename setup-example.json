@@ -137,6 +137,29 @@
                     }
                 }
             }
+        ],
+        "blind" : [
+        {
+            "entity_id": "webhook.blind.1",
+            "friendly_name": "Blind office",
+            "attributes": {
+                "invert_position": true
+            },
+            "commands": {
+                "OPEN": {
+                    "url": "roller/0?go=open"
+                },
+                "CLOSE": {
+                    "url": "roller/0?go=close"
+                },
+                "STOP": {
+                    "url": "roller/0?go=stop"
+                },
+                "POSITION": {
+                    "url": "roller/0?go=to_pos&roller_pos=${position_percent}"
+                }
+            }
+        }
         ]
     }
 }

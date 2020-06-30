@@ -32,13 +32,14 @@ class WebhookEntity : public QObject {
  public:
     explicit WebhookEntity(QObject *parent = nullptr) : QObject(parent) {}
     explicit WebhookEntity(const QString &id, const QString &type, const QString &friendlyName,
-                           QObject *parent = nullptr)
-        : QObject(parent), id(id), type(type), friendlyName(friendlyName) {}
+                           const QVariantMap &attributes, QObject *parent = nullptr)
+        : QObject(parent), id(id), type(type), friendlyName(friendlyName), attributes(attributes) {}
 
  public:
     QString     id;
     QString     type;
     QString     friendlyName;
+    QVariantMap attributes;
     QStringList supportedFeatures;
 
     QMap<QString, WebhookCommand *> commands;

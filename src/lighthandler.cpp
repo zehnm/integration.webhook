@@ -22,18 +22,14 @@
 
 #include "lighthandler.h"
 
-#include <QLoggingCategory>
-
 #include "yio-interface/entities/lightinterface.h"
 
-static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook");
+static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.light");
 
 LightHandler::LightHandler(const QString &baseUrl, QObject *parent) : EntityHandler("light", baseUrl, parent) {}
 
 WebhookRequest *LightHandler::prepareRequest(const QString &entityId, EntityInterface *entity, int command,
                                              const QVariantMap &placeholders, const QVariant &param) {
-    Q_UNUSED(entity)
-
     QString         feature;
     QVariantMap     parameters(placeholders);
     LightInterface *lightInterface = static_cast<LightInterface *>(entity->getSpecificInterface());
@@ -74,6 +70,8 @@ WebhookRequest *LightHandler::prepareRequest(const QString &entityId, EntityInte
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
             return Q_NULLPTR;
     }
+
+    qCDebug(CLASS_LC()) << entity->friendly_name() << "command:" << feature << ", parameter:" << param;
 
     setPlaceholderValues(&parameters, state, color, brightness, colorTemp);
 
@@ -119,8 +117,10 @@ void LightHandler::onReply(int command, EntityInterface *entity, const QVariant 
     if (reply->error() == QNetworkReply::NoError) {
         QVariantMap values;
         int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-        if (count > 0 && CLASS_LC().isDebugEnabled()) {
-            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+        if (count > 0) {
+            if (CLASS_LC().isDebugEnabled()) {
+                qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            }
             updateEntity(entity, values);
         }
     } else {
@@ -129,6 +129,8 @@ void LightHandler::onReply(int command, EntityInterface *entity, const QVariant 
         updateEntity(entity, oldState, oldColor, oldBrightness, oldColorTemp);
     }
 }
+
+const QLoggingCategory &LightHandler::logCategory() const { return CLASS_LC(); }
 
 void LightHandler::setPlaceholderValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
                                         int colorTemp) const {
@@ -183,18 +185,22 @@ void LightHandler::updateEntity(EntityInterface *entity, const QVariantMap &plac
 void LightHandler::updateEntity(EntityInterface *entity, int state, const QVariant &color, int brightness,
                                 int colorTemp) {
     if (state >= 0) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "state:" << state;
         entity->setState(state);
     }
 
     if (brightness >= 0 && entity->isSupported(LightDef::F_BRIGHTNESS)) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "brightness:" << brightness;
         entity->updateAttrByIndex(LightDef::BRIGHTNESS, brightness);
     }
 
     if (color.isValid() && entity->isSupported(LightDef::F_COLOR)) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "color:" << color;
         entity->updateAttrByIndex(LightDef::COLOR, color);
     }
 
     if (colorTemp >= 0 && entity->isSupported(LightDef::F_COLORTEMP)) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "colorTemp:" << colorTemp;
         entity->updateAttrByIndex(LightDef::COLORTEMP, colorTemp);
     }
 }

@@ -55,7 +55,7 @@
                                     "type": "object",
                                     "title": "Response mappings",
                                     "description": "JSON payload mapping to entity attributes with JsonPath.",
-                                    "propertyNames": {"enum": ["state_bool", "state_bin", "power", "brightness_percent", "color_temp", "color_r", "color_g", "color_b", "color_h", "color_s", "color_v"]},
+                                    "propertyNames": {"enum": ["state_bool", "state_bin", "power", "brightness_percent", "color_temp", "color_r", "color_g", "color_b", "color_h", "color_s", "color_v", "position"]},
                                     "patternProperties": {
                                       "": { "type": "string" }
                                     }
@@ -177,6 +177,43 @@
                             "commands": {
                                 "type": "object",
                                 "propertyNames": { "enum": [ "ON", "OFF", "TOGGLE", "BRIGHTNESS", "COLOR", "COLORTEMP" ] },
+                                "patternProperties": {
+                                  "": { "$ref": "#/definitions/command" }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                            "entity_id",
+                            "friendly_name",
+                            "commands"
+                        ]
+                    }
+                },
+                "blind": {
+                    "type": "array",
+                    "title": "Blind items",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entity_id": {
+                                "type": "string"
+                            },
+                            "friendly_name": {
+                                "type": "string"
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "invert_position": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            },
+                            "commands": {
+                                "type": "object",
+                                "propertyNames": { "enum": [ "OPEN", "CLOSE", "STOP", "POSITION" ] },
                                 "patternProperties": {
                                   "": { "$ref": "#/definitions/command" }
                                 },
