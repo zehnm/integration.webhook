@@ -1,5 +1,7 @@
 #include "entityhandler.h"
 
+static Q_LOGGING_CATEGORY(CLASS_LC_TEST, "unit.test");
+
 class TestEntityHandler;
 class EntityHandlerImpl : public EntityHandler {
     Q_OBJECT
@@ -28,6 +30,9 @@ class EntityHandlerImpl : public EntityHandler {
         Q_UNUSED(request)
         Q_UNUSED(reply)
     }
+
+ protected:
+    const QLoggingCategory& logCategory() const override { return CLASS_LC_TEST(); }
 
  private:
     friend TestEntityHandler;

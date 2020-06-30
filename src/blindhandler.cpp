@@ -22,18 +22,14 @@
 
 #include "blindhandler.h"
 
-#include <QLoggingCategory>
-
 #include "yio-interface/entities/blindinterface.h"
 
-static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook");
+static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.blind");
 
 BlindHandler::BlindHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
 WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInterface *entity, int command,
                                              const QVariantMap &placeholders, const QVariant &param) {
-    Q_UNUSED(entity)
-
     QString         feature;
     QVariantMap     parameters(placeholders);
     BlindInterface *blindInterface = static_cast<BlindInterface *>(entity->getSpecificInterface());
@@ -63,6 +59,8 @@ WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInte
             return Q_NULLPTR;
     }
 
+    qCDebug(CLASS_LC()) << entity->friendly_name() << "command:" << feature << ", parameter:" << param;
+
     position = convertPosition(position);
 
     setPlaceholderValues(&parameters, state, position);
@@ -82,14 +80,21 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
     switch (command) {
         case BlindDef::C_OPEN:
             state = BlindDef::OPEN;
+            position = 0;
             break;
         case BlindDef::C_CLOSE:
             state = BlindDef::CLOSED;
+            position = 100;
             break;
         case BlindDef::C_STOP:
             break;
         case BlindDef::C_POSITION:
             position = param.toInt();
+            if (position == 0) {
+                state = BlindDef::OPEN;
+            } else if (position == 100) {
+                state = BlindDef::CLOSED;
+            }
             break;
     }
 
@@ -98,8 +103,10 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
     if (reply->error() == QNetworkReply::NoError) {
         QVariantMap values;
         int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-        if (count > 0 && CLASS_LC().isDebugEnabled()) {
-            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+        if (count > 0) {
+            if (CLASS_LC().isDebugEnabled()) {
+                qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            }
             updateEntity(entity, values);
         }
     } else {
@@ -108,6 +115,8 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
         updateEntity(entity, oldState, oldPosition, false);
     }
 }
+
+const QLoggingCategory &BlindHandler::logCategory() const { return CLASS_LC(); }
 
 bool BlindHandler::isConvertPosition(const QString &entityId) {
     WebhookEntity *entity = m_webhookEntities.value(entityId);
@@ -151,6 +160,7 @@ void BlindHandler::updateEntity(EntityInterface *entity, const QVariantMap &plac
 
 void BlindHandler::updateEntity(EntityInterface *entity, int state, int position, bool convert) {
     if (state >= 0) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "state:" << state;
         entity->setState(state);
     }
 
@@ -158,6 +168,7 @@ void BlindHandler::updateEntity(EntityInterface *entity, int state, int position
         if (convert && isConvertPosition(entity->entity_id())) {
             position = convertPosition(position);
         }
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "position:" << position;
         entity->updateAttrByIndex(BlindDef::POSITION, position);
     }
 }

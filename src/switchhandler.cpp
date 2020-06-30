@@ -22,11 +22,9 @@
 
 #include "switchhandler.h"
 
-#include <QLoggingCategory>
-
 #include "yio-interface/entities/switchinterface.h"
 
-static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook");
+static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.switch");
 
 SwitchHandler::SwitchHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
@@ -62,8 +60,10 @@ void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant
     if (reply->error() == QNetworkReply::NoError) {
         QVariantMap values;
         int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-        if (count > 0 && CLASS_LC().isDebugEnabled()) {
-            qCDebug(CLASS_LC) << "Extracted response values:" << values;
+        if (count > 0) {
+            if (CLASS_LC().isDebugEnabled()) {
+                qCDebug(CLASS_LC) << "Extracted response values:" << values;
+            }
             updateEntity(entity, values);
         }
     } else {
@@ -71,6 +71,8 @@ void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant
         entity->setState(oldState);
     }
 }
+
+const QLoggingCategory &SwitchHandler::logCategory() const { return CLASS_LC(); }
 
 void SwitchHandler::updateEntity(EntityInterface *entity, const QVariantMap &placeholders) {
     int state = -1;
@@ -82,12 +84,14 @@ void SwitchHandler::updateEntity(EntityInterface *entity, const QVariantMap &pla
     }
 
     if (state >= 0) {
+        qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "state:" << state;
         entity->setState(state);
     }
 
     if (placeholders.contains("power")) {
         int power = placeholders.value("power").toInt();
         if (power >= 0 && entity->isSupported(SwitchDef::F_POWER)) {
+            qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "power:" << state;
             entity->updateAttrByIndex(SwitchDef::POWER, power);
         }
     }

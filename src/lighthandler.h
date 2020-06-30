@@ -40,6 +40,9 @@ class LightHandler : public EntityHandler {
     void onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
                  QNetworkReply *reply) override;
 
+ protected:
+  const QLoggingCategory &logCategory() const override;
+
  private:
     void setPlaceholderValues(QVariantMap *placeholders, int state, const QColor &color, int brightness,
                               int colorTemp) const;

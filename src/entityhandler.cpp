@@ -24,13 +24,9 @@
 
 #include <math.h>
 
-#include <QLoggingCategory>
 #include <QRegularExpression>
 
 #include "jsonpath.h"
-
-// TODO(zehnm) set logging category from concrete class
-static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook");
 
 EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, QObject *parent)
     : QObject(parent), m_entityType(entityType), m_baseUrl(baseUrl) {}
@@ -125,8 +121,9 @@ QString EntityHandler::resolveVariables(const QString &text, const QVariantMap &
                 bool ok;
                 int  number = placeholders.value(varName).toInt(&ok);
                 if (!ok) {
-                    qCWarning(CLASS_LC) << "Variable format only supports numbers! Value:"
-                                        << placeholders.value(varName) << ", placeholder:" << match.captured(0);
+                    qCWarning(logCategory())
+                        << "Variable format only supports numbers! Value:" << placeholders.value(varName)
+                        << ", placeholder:" << match.captured(0);
                 } else {
                     QString formattedValue = QString::asprintf(qPrintable(format), number);
                     resolved.replace(match.captured(0), formattedValue);
@@ -154,13 +151,13 @@ QUrl EntityHandler::buildUrl(const QVariant &commandUrl, const QVariantMap &plac
 WebhookRequest *EntityHandler::createRequest(const QString &commandName, const QString &entityId,
                                              const QVariantMap &placeholders) const {
     if (!m_webhookEntities.contains(entityId)) {
-        qCWarning(CLASS_LC) << "Entity not found:" << entityId;
+        qCWarning(logCategory()) << "Entity not found:" << entityId;
         return Q_NULLPTR;
     }
 
     WebhookEntity *entity = m_webhookEntities.value(entityId);
     if (!entity->commands.contains(commandName)) {
-        qCWarning(CLASS_LC) << "Command" << commandName << "not defined for entity:" << entityId;
+        qCWarning(logCategory()) << "Command" << commandName << "not defined for entity:" << entityId;
         return Q_NULLPTR;
     }
     WebhookCommand *command = entity->commands.value(commandName);
@@ -196,7 +193,7 @@ int EntityHandler::retrieveResponseValues(QNetworkReply *reply, const QMap<QStri
         return retrieveResponseValues(jsonDoc, mappings, values);
     }
 
-    qCDebug(CLASS_LC) << "Response mapping not yet implemented for content type:" << contentType;
+    qCDebug(logCategory()) << "Response mapping not yet implemented for content type:" << contentType;
 
     return 0;
 }

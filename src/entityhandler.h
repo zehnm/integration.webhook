@@ -24,6 +24,7 @@
 
 #include <QJsonDocument>
 #include <QList>
+#include <QLoggingCategory>
 #include <QMap>
 #include <QMetaEnum>
 #include <QNetworkReply>
@@ -55,6 +56,8 @@ class EntityHandler : public QObject {
                          QNetworkReply* reply) = 0;
 
  protected:
+    virtual const QLoggingCategory& logCategory() const = 0;
+
     QUrl    buildUrl(const QVariant& commandUrl, const QVariantMap& placeholders) const;
     int     convertBrightnessToPercentage(float value) const;
     QString resolveVariables(const QString& text, const QVariantMap& placeholders) const;
