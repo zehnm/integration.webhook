@@ -41,7 +41,7 @@ Integration *WebhookPlugin::createIntegration(const QVariantMap &config, Entitie
 
 Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
                  YioAPIInterface *api, ConfigInterface *configObj, Plugin *plugin)
-    : Integration(config, entities, notifications, api, configObj, plugin) {
+    : Integration(config, entities, notifications, api, configObj, plugin), m_statusTimer(Q_NULLPTR) {
     if (!config.contains(Integration::OBJ_DATA)) {
         qCCritical(m_logCategory) << "Missing configuration key" << Integration::OBJ_DATA;
         return;
@@ -68,8 +68,6 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
         configureProxy(map.value("proxy").toMap());
     }
 
-    qCDebug(m_logCategory) << "Created webhook for:" << baseUrl << "ignoreSSL:" << ignoreSsl;
-
     QVariantMap entitiesCfg = map.value("entities").toMap();
     for (QVariantMap::const_iterator iter = entitiesCfg.cbegin(); iter != entitiesCfg.cend(); ++iter) {
         EntityHandler *entityHandler = m_handlers.value(iter.key());
@@ -83,30 +81,52 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
     for (EntityHandler *entityHandler : m_handlers) {
         addAvailableEntities(entityHandler->getEntities());
     }
+
+    int statusPolling = map.value("status_polling", 30).toInt();
+    if (statusPolling > 1000) {
+        qCWarning(m_logCategory) << "Status polling interval is in seconds, but has a value > 1000!";
+    } else if (statusPolling < 0) {
+        statusPolling = 0;
+    }
+
+    if (statusPolling > 0) {
+        m_statusTimer = new QTimer(this);
+        m_statusTimer->setInterval(statusPolling * 1000);
+        QObject::connect(m_statusTimer, &QTimer::timeout, this, &Webhook::onStatusUpdate);
+    }
+
+    qCDebug(m_logCategory) << "Created webhook for:" << baseUrl << ", ignoreSSL:" << ignoreSsl
+                           << ", statusPolling:" << statusPolling * 1000;
 }
 
 void Webhook::connect() {
     setState(CONNECTING);
 
-    // TODO(zehnm) implement me, e.g. starting timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->start();
+    }
+
+    setState(CONNECTED);
 }
 
 void Webhook::disconnect() {
-    // TODO(zehnm) implement me, e.g. stopping timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->stop();
+    }
 
     setState(DISCONNECTED);
 }
 
 void Webhook::enterStandby() {
-    // TODO(zehnm) implement me, e.g. suspending timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->stop();
+    }
 }
 
 void Webhook::leaveStandby() {
-    // TODO(zehnm) implement me, e.g. restarting timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->start();
+    }
 }
 
 void Webhook::addAvailableEntities(const QList<WebhookEntity *> &entities) {
@@ -146,7 +166,13 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
     }
 
     WebhookRequest *request = entityHandler->prepareRequest(entityId, entity, command, m_placeholders, param);
-    if (!request) {
+
+    sendWebhookRequest(request, entityHandler, entity, command, param);
+}
+
+void Webhook::sendWebhookRequest(WebhookRequest *request, EntityHandler *entityHandler, EntityInterface *entity,
+                                 int command, const QVariant &param) {
+    if (!request || !entityHandler || !entity) {
         return;
     }
     Q_ASSERT(request->webhookCommand);
@@ -186,4 +212,21 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
 void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &errors) {
     qCDebug(m_logCategory) << "Ignoring SSL error:" << errors;
     reply->ignoreSslErrors();
+}
+
+void Webhook::onStatusUpdate() {
+    // Proof of concept only!
+    // This probably blocks the main thread for too long if many entities are being polled.
+    // --> Use processing thread & signals
+    for (EntityHandler *handler : m_handlers.values()) {
+        for (WebhookEntity *entity : handler->getEntities()) {
+            if (handler->hasStatusCommand(entity->id)) {
+                WebhookRequest *statusRequest = handler->createStatusRequest(entity->id, m_placeholders);
+
+                // TODO(zehnm) ignore failed status requests: status is best efford only
+                sendWebhookRequest(statusRequest, handler, m_entities->getEntityInterface(entity->id), -999,
+                                   QVariant());
+            }
+        }
+    }
 }

@@ -2,6 +2,7 @@
     "_comment": "Test configuration for https://requestbin.com/r/en7n3554s0rbk",
     "base_url": "https://en7n3554s0rbk.x.pipedream.net/${ROOT}",
     "ssl_ignore": false,
+    "status_polling": 30,
     "placeholders": {
         "TOKEN": "secret123",
         "ROOT": "test",

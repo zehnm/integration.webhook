@@ -91,6 +91,18 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
     return count;
 }
 
+bool EntityHandler::hasStatusCommand(const QString &entityId) {
+    WebhookEntity *entity = m_webhookEntities.value(entityId);
+    if (!entity) {
+        return false;
+    }
+    return entity->commands.contains("STATUS");
+}
+
+WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, const QVariantMap &placeholders) {
+    return createRequest("STATUS", entityId, placeholders);
+}
+
 int EntityHandler::convertBrightnessToPercentage(float value) const {
     // TODO(zehnm) implement scaling option
     return static_cast<int>(round(value / 255 * 100));

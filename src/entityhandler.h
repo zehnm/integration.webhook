@@ -49,6 +49,9 @@ class EntityHandler : public QObject {
 
     QList<WebhookEntity*> getEntities() const { return m_webhookEntities.values(); }
 
+    bool hasStatusCommand(const QString& entityId);
+    WebhookRequest* createStatusRequest(const QString& entityId, const QVariantMap& placeholders);
+
     virtual WebhookRequest* prepareRequest(const QString& entityId, EntityInterface* entity, int command,
                                            const QVariantMap& placeholders, const QVariant& param) = 0;
 

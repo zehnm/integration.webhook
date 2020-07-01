@@ -29,7 +29,7 @@
 #include <QObject>
 #include <QSslError>
 #include <QString>
-#include <QThread>
+#include <QTimer>
 #include <QVariantMap>
 
 #include "entityhandler.h"
@@ -80,14 +80,18 @@ class Webhook : public Integration {
     void leaveStandby() override;
 
  private:
-    void addAvailableEntities(const QList<WebhookEntity *> &entities);
+    void addAvailableEntities(const QList<WebhookEntity*>& entities);
     void configureProxy(const QVariantMap& proxyCfg);
+    void sendWebhookRequest(WebhookRequest* request, EntityHandler* entityHandler, EntityInterface* entity, int command,
+                            const QVariant& param);
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void ignoreSslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
+    void onStatusUpdate();
 
  private:
     QNetworkAccessManager         m_networkManager;
     QMap<QString, EntityHandler*> m_handlers;
     QVariantMap                   m_placeholders;
+    QTimer*                       m_statusTimer;
 };
