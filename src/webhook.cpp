@@ -167,29 +167,9 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
 
     WebhookRequest *request = entityHandler->createCommandRequest(entityId, entity, command, m_placeholders, param);
 
-    sendWebhookRequest(request, entityHandler, entity, command, param);
-}
-
-void Webhook::sendWebhookRequest(WebhookRequest *request, EntityHandler *entityHandler, EntityInterface *entity,
-                                 int command, const QVariant &param) {
-    if (!request || !entityHandler || !entity) {
+    QNetworkReply *reply = sendWebhookRequest(request);
+    if (reply == nullptr) {
         return;
-    }
-    Q_ASSERT(request->webhookCommand);
-
-    QNetworkReply *reply;
-    switch (request->webhookCommand->method) {
-        case HttpMethod::POST:
-            reply = m_networkManager.post(request->networkRequest, request->body);
-            break;
-        case HttpMethod::PUT:
-            reply = m_networkManager.put(request->networkRequest, request->body);
-            break;
-        case HttpMethod::DELETE:
-            reply = m_networkManager.deleteResource(request->networkRequest);
-            break;
-        default:
-            reply = m_networkManager.get(request->networkRequest);
     }
 
     QObject::connect(
@@ -209,23 +189,53 @@ void Webhook::sendWebhookRequest(WebhookRequest *request, EntityHandler *entityH
         });
 }
 
+QNetworkReply *Webhook::sendWebhookRequest(WebhookRequest *request) {
+    if (!request) {
+        return nullptr;
+    }
+    Q_ASSERT(request->webhookCommand);
+
+    switch (request->webhookCommand->method) {
+        case HttpMethod::POST:
+            return m_networkManager.post(request->networkRequest, request->body);
+        case HttpMethod::PUT:
+            return m_networkManager.put(request->networkRequest, request->body);
+        case HttpMethod::DELETE:
+            return m_networkManager.deleteResource(request->networkRequest);
+        default:
+            return m_networkManager.get(request->networkRequest);
+    }
+}
+
 void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &errors) {
     qCDebug(m_logCategory) << "Ignoring SSL error:" << errors;
     reply->ignoreSslErrors();
 }
 
 void Webhook::statusUpdate() {
-    // Proof of concept only!
-    // This probably blocks the main thread for too long if many entities are being polled.
-    // --> Use processing thread & signals
+    // Proof of concept only! Verify if this blocks the main thread for too long. Otherwise use a processing thread.
     for (EntityHandler *handler : m_handlers.values()) {
         for (WebhookEntity *entity : handler->getEntities()) {
             if (handler->hasStatusCommand(entity->id)) {
                 WebhookRequest *statusRequest = handler->createStatusRequest(entity->id, m_placeholders);
 
-                // TODO(zehnm) ignore failed status requests: status is best effort only
-                sendWebhookRequest(statusRequest, handler, m_entities->getEntityInterface(entity->id), COMMAND_STATUS,
-                                   QVariant());
+                QNetworkReply *reply = sendWebhookRequest(statusRequest);
+                if (reply == nullptr) {
+                    return;
+                }
+
+                QObject::connect(reply, &QNetworkReply::finished, this, [this, handler, entity, statusRequest, reply] {
+                    statusRequest->deleteLater();
+                    reply->deleteLater();
+
+                    if (reply->error() != QNetworkReply::NoError) {
+                        qCWarning(m_logCategory)
+                            << "Status request failed:" << entity->friendlyName << reply->url().url() << "/"
+                            << reply->error() << "/" << reply->errorString();
+                    }
+
+                    handler->statusReply(m_entities->getEntityInterface(entity->id), statusRequest, reply);
+                });
             }
         }
     }

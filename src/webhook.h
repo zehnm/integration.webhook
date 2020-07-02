@@ -80,10 +80,9 @@ class Webhook : public Integration {
     void leaveStandby() override;
 
  private:
-    void addAvailableEntities(const QList<WebhookEntity*>& entities);
-    void configureProxy(const QVariantMap& proxyCfg);
-    void sendWebhookRequest(WebhookRequest* request, EntityHandler* entityHandler, EntityInterface* entity, int command,
-                            const QVariant& param);
+    void           addAvailableEntities(const QList<WebhookEntity*>& entities);
+    void           configureProxy(const QVariantMap& proxyCfg);
+    QNetworkReply* sendWebhookRequest(WebhookRequest* request);
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void ignoreSslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
