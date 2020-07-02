@@ -12,7 +12,7 @@ class EntityHandlerImpl : public EntityHandler {
 
     // EntityHandler interface
  public:
-    WebhookRequest *prepareRequest(const QString &entityId, EntityInterface *entity, int command,
+    WebhookRequest *createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
                                    const QVariantMap &placeholders, const QVariant &param) override {
         Q_UNUSED(entityId)
         Q_UNUSED(entity)
@@ -22,7 +22,7 @@ class EntityHandlerImpl : public EntityHandler {
         return Q_NULLPTR;
     }
 
-    void onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+    void commandReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
                  QNetworkReply *reply) override {
         Q_UNUSED(command)
         Q_UNUSED(entity)
@@ -33,6 +33,11 @@ class EntityHandlerImpl : public EntityHandler {
 
  protected:
     const QLoggingCategory& logCategory() const override { return CLASS_LC_TEST(); }
+
+    void updateEntity(EntityInterface *entity, const QVariantMap &placeholders) override {
+        Q_UNUSED(entity)
+        Q_UNUSED(placeholders)
+    }
 
  private:
     friend TestEntityHandler;

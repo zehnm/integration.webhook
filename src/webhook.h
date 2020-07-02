@@ -87,7 +87,7 @@ class Webhook : public Integration {
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void ignoreSslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
-    void onStatusUpdate();
+    void statusUpdate();
 
  private:
     QNetworkAccessManager         m_networkManager;

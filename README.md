@@ -99,7 +99,7 @@ Initial response mapping is implemented with support for the power attribute.
 
 - [x] Response mapping  
   E.g. entity attributes like brightness etc.
-- [ ] Status polling
+- [x] Status polling
 - [x] Blind entity
   - [x] Invert position option
 - [ ] Remote entity

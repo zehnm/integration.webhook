@@ -103,6 +103,12 @@ WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, cons
     return createRequest("STATUS", entityId, placeholders);
 }
 
+void EntityHandler::statusReply(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        handleResponseData(entity, request, reply);
+    }
+}
+
 int EntityHandler::convertBrightnessToPercentage(float value) const {
     // TODO(zehnm) implement scaling option
     return static_cast<int>(round(value / 255 * 100));
@@ -195,6 +201,17 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
     }
 
     return request;
+}
+
+void EntityHandler::handleResponseData(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {
+    QVariantMap values;
+    int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
+    if (count > 0) {
+        if (logCategory().isDebugEnabled()) {
+            qCDebug(logCategory()) << "Extracted response values:" << values;
+        }
+        updateEntity(entity, values);
+    }
 }
 
 int EntityHandler::retrieveResponseValues(QNetworkReply *reply, const QMap<QString, QString> &mappings,

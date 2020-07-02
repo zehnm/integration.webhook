@@ -28,6 +28,8 @@
 
 #include "httpmethod.h"
 
+const int COMMAND_STATUS = -999;
+
 /**
  * @brief Webhook raw command data, read from the configuration.
  */

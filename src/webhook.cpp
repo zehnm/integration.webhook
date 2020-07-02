@@ -92,7 +92,7 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
     if (statusPolling > 0) {
         m_statusTimer = new QTimer(this);
         m_statusTimer->setInterval(statusPolling * 1000);
-        QObject::connect(m_statusTimer, &QTimer::timeout, this, &Webhook::onStatusUpdate);
+        QObject::connect(m_statusTimer, &QTimer::timeout, this, &Webhook::statusUpdate);
     }
 
     qCDebug(m_logCategory) << "Created webhook for:" << baseUrl << ", ignoreSSL:" << ignoreSsl
@@ -165,7 +165,7 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
         return;
     }
 
-    WebhookRequest *request = entityHandler->prepareRequest(entityId, entity, command, m_placeholders, param);
+    WebhookRequest *request = entityHandler->createCommandRequest(entityId, entity, command, m_placeholders, param);
 
     sendWebhookRequest(request, entityHandler, entity, command, param);
 }
@@ -205,7 +205,7 @@ void Webhook::sendWebhookRequest(WebhookRequest *request, EntityHandler *entityH
                                          << "/" << reply->error() << "/" << reply->errorString();
             }
 
-            entityHandler->onReply(command, entity, param, request, reply);
+            entityHandler->commandReply(command, entity, param, request, reply);
         });
 }
 
@@ -214,7 +214,7 @@ void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &erro
     reply->ignoreSslErrors();
 }
 
-void Webhook::onStatusUpdate() {
+void Webhook::statusUpdate() {
     // Proof of concept only!
     // This probably blocks the main thread for too long if many entities are being polled.
     // --> Use processing thread & signals
@@ -223,8 +223,8 @@ void Webhook::onStatusUpdate() {
             if (handler->hasStatusCommand(entity->id)) {
                 WebhookRequest *statusRequest = handler->createStatusRequest(entity->id, m_placeholders);
 
-                // TODO(zehnm) ignore failed status requests: status is best efford only
-                sendWebhookRequest(statusRequest, handler, m_entities->getEntityInterface(entity->id), -999,
+                // TODO(zehnm) ignore failed status requests: status is best effort only
+                sendWebhookRequest(statusRequest, handler, m_entities->getEntityInterface(entity->id), COMMAND_STATUS,
                                    QVariant());
             }
         }

@@ -45,18 +45,60 @@ class EntityHandler : public QObject {
 
     QString entityType() { return m_entityType; }
 
+    /**
+     * @brief Reads all webhook entity definitions from the configuration structure.
+     * All valid webhook entities can be retrieved afterwards with getEntities().
+     * @param entityCfgList Webhook configuration structure.
+     * @param headers Global default http request headers applicable for all command requests.
+     * @return Number of created entities
+     */
     int readEntities(const QVariantList& entityCfgList, const QVariantMap& headers);
 
     QList<WebhookEntity*> getEntities() const { return m_webhookEntities.values(); }
 
+    /**
+     * @brief Returns true if the given entity supports status requests.
+     */
     bool hasStatusCommand(const QString& entityId);
+
+    /**
+     * @brief Creates an internal status update request for the given entity identifier.
+     * @return A newly created WebhookRequest object which must be deleted by the caller, or null if the entity does not
+     * support status requests.
+     */
     WebhookRequest* createStatusRequest(const QString& entityId, const QVariantMap& placeholders);
 
-    virtual WebhookRequest* prepareRequest(const QString& entityId, EntityInterface* entity, int command,
-                                           const QVariantMap& placeholders, const QVariant& param) = 0;
+    /**
+     * @brief Handles the internal QNetworkReply from the given status request.
+     * @param entity The entity interface for retrieving and setting command specific information.
+     * @param request The corresponding wehook status request.
+     * @param reply The received reply from the webhook status request.
+     */
+    virtual void statusReply(EntityInterface* entity, const WebhookRequest* request, QNetworkReply* reply);
 
-    virtual void onReply(int command, EntityInterface* entity, const QVariant& param, const WebhookRequest* request,
-                         QNetworkReply* reply) = 0;
+    /**
+     * @brief Creates a webhook request for the given entity command.
+     * @param entityId Entity identifier.
+     * @param entity The entity interface for retrieving and setting command specific information.
+     * @param command Entity specific command sent from the app. See BlindDef, LightDef, SwitchDef, etc. enums
+     * @param placeholders Webhook specific variable placeholders.
+     * @param param Command specific parameter, provided from the app.
+     * @return A newly created WebhookRequest object which must be deleted by the caller, or null if the request could
+     * not be created.
+     */
+    virtual WebhookRequest* createCommandRequest(const QString& entityId, EntityInterface* entity, int command,
+                                                 const QVariantMap& placeholders, const QVariant& param) = 0;
+
+    /**
+     * @brief Handles the QNetworkReply from the given webhook request.
+     * @param command Original entity specific command sent from the app. See BlindDef, LightDef, SwitchDef, etc. enums
+     * @param entity The entity interface for retrieving and setting command specific information.
+     * @param param Original command specific parameter, provided from the app.
+     * @param request The corresponding wehook command request.
+     * @param reply The received reply from the webhook command request.
+     */
+    virtual void commandReply(int command, EntityInterface* entity, const QVariant& param,
+                              const WebhookRequest* request, QNetworkReply* reply) = 0;
 
  protected:
     virtual const QLoggingCategory& logCategory() const = 0;
@@ -68,10 +110,14 @@ class EntityHandler : public QObject {
     WebhookRequest* createRequest(const QString& commandName, const QString& entityId,
                                   const QVariantMap& placeholders) const;
 
+    virtual void handleResponseData(EntityInterface* entity, const WebhookRequest* request, QNetworkReply* reply);
+
     int retrieveResponseValues(QNetworkReply* reply, const QMap<QString, QString>& mappings, QVariantMap* values);
 
     int retrieveResponseValues(const QJsonDocument& jsonDoc, const QMap<QString, QString>& mappings,
                                QVariantMap* values);
+
+    virtual void updateEntity(EntityInterface* entity, const QVariantMap& placeholders) = 0;
 
     template <class EnumClass>
     EnumClass stringToEnum(const QString& enumString, const EnumClass& defaultValue) const {

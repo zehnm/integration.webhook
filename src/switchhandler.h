@@ -32,15 +32,14 @@ class SwitchHandler : public EntityHandler {
 
     // EntityHandler interface
  public:
-    WebhookRequest *prepareRequest(const QString &entityId, EntityInterface *entity, int command,
-                                   const QVariantMap &placeholders, const QVariant &param) override;
+    WebhookRequest *createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
+                                         const QVariantMap &placeholders, const QVariant &param) override;
 
-    void onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
-                 QNetworkReply *reply) override;
+    void commandReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
+                      QNetworkReply *reply) override;
 
  protected:
     const QLoggingCategory &logCategory() const override;
 
- private:
-    void updateEntity(EntityInterface *entity, const QVariantMap &placeholders);
+    void updateEntity(EntityInterface *entity, const QVariantMap &placeholders) override;
 };
