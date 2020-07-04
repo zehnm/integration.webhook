@@ -33,7 +33,7 @@ EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, 
 
 int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVariantMap &headers) {
     int count = 0;
-    for (QVariant entityCfg : entityCfgList) {
+    for (const QVariant &entityCfg : entityCfgList) {
         QVariantMap    entityCfgMap = entityCfg.toMap();
         WebhookEntity *entity = new WebhookEntity(entityCfgMap.value("entity_id").toString(), entityType(),
                                                   entityCfgMap.value("friendly_name").toString(),
@@ -91,7 +91,11 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
     return count;
 }
 
-bool EntityHandler::hasStatusCommand(const QString &entityId) {
+QMapIterator<QString, WebhookEntity *> EntityHandler::entityIter() const {
+    return QMapIterator<QString, WebhookEntity *>(m_webhookEntities);
+}
+
+bool EntityHandler::hasStatusCommand(const QString &entityId) const {
     WebhookEntity *entity = m_webhookEntities.value(entityId);
     if (!entity) {
         return false;
@@ -99,7 +103,7 @@ bool EntityHandler::hasStatusCommand(const QString &entityId) {
     return entity->commands.contains("STATUS");
 }
 
-WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, const QVariantMap &placeholders) {
+WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, const QVariantMap &placeholders) const {
     return createRequest("STATUS", entityId, placeholders);
 }
 
@@ -195,9 +199,11 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
         }
     }
 
-    for (QString headerName : command->headers.keys()) {
-        QString headerValue = resolveVariables(command->headers.value(headerName).toString(), placeholders);
-        request->networkRequest.setRawHeader(headerName.toUtf8(), headerValue.toUtf8());
+    QMapIterator<QString, QVariant> iter(command->headers);
+    while (iter.hasNext()) {
+        iter.next();
+        QString headerValue = resolveVariables(command->headers.value(iter.key()).toString(), placeholders);
+        request->networkRequest.setRawHeader(iter.key().toUtf8(), headerValue.toUtf8());
     }
 
     return request;

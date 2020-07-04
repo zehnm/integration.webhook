@@ -29,7 +29,7 @@ static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.blind");
 BlindHandler::BlindHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
 WebhookRequest *BlindHandler::createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
-                                                   const QVariantMap &placeholders, const QVariant &param) {
+                                                   const QVariantMap &placeholders, const QVariant &param) const {
     QString         feature;
     QVariantMap     parameters(placeholders);
     BlindInterface *blindInterface = static_cast<BlindInterface *>(entity->getSpecificInterface());

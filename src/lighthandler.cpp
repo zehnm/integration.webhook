@@ -29,7 +29,7 @@ static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.light");
 LightHandler::LightHandler(const QString &baseUrl, QObject *parent) : EntityHandler("light", baseUrl, parent) {}
 
 WebhookRequest *LightHandler::createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
-                                                   const QVariantMap &placeholders, const QVariant &param) {
+                                                   const QVariantMap &placeholders, const QVariant &param) const {
     QString         feature;
     QVariantMap     parameters(placeholders);
     LightInterface *lightInterface = static_cast<LightInterface *>(entity->getSpecificInterface());

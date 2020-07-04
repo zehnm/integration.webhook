@@ -69,7 +69,7 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
     }
 
     QVariantMap entitiesCfg = map.value("entities").toMap();
-    for (QVariantMap::const_iterator iter = entitiesCfg.cbegin(); iter != entitiesCfg.cend(); ++iter) {
+    for (auto iter = entitiesCfg.cbegin(); iter != entitiesCfg.cend(); ++iter) {
         EntityHandler *entityHandler = m_handlers.value(iter.key());
         if (entityHandler) {
             entityHandler->readEntities(iter.value().toList(), headers);
@@ -78,8 +78,13 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
         }
     }
 
-    for (EntityHandler *entityHandler : m_handlers) {
-        addAvailableEntities(entityHandler->getEntities());
+    for (const EntityHandler *entityHandler : qAsConst(m_handlers)) {
+        auto iter = entityHandler->entityIter();
+        while (iter.hasNext()) {
+            iter.next();
+            const WebhookEntity *e = iter.value();
+            addAvailableEntity(e->id, e->type, integrationId(), e->friendlyName, e->supportedFeatures);
+        }
     }
 
     int statusPolling = map.value("status_polling", 30).toInt();
@@ -126,12 +131,6 @@ void Webhook::enterStandby() {
 void Webhook::leaveStandby() {
     if (m_statusTimer) {
         m_statusTimer->start();
-    }
-}
-
-void Webhook::addAvailableEntities(const QList<WebhookEntity *> &entities) {
-    for (WebhookEntity *e : entities) {
-        addAvailableEntity(e->id, e->type, integrationId(), e->friendlyName, e->supportedFeatures);
     }
 }
 
@@ -214,8 +213,11 @@ void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 
 void Webhook::statusUpdate() {
     // Proof of concept only! Verify if this blocks the main thread for too long. Otherwise use a processing thread.
-    for (EntityHandler *handler : m_handlers.values()) {
-        for (WebhookEntity *entity : handler->getEntities()) {
+    for (EntityHandler *handler : qAsConst(m_handlers)) {
+        QMapIterator<QString, WebhookEntity*> entityIter = handler->entityIter();
+        while (entityIter.hasNext()) {
+            entityIter.next();
+            const WebhookEntity *entity = entityIter.value();
             if (handler->hasStatusCommand(entity->id)) {
                 WebhookRequest *statusRequest = handler->createStatusRequest(entity->id, m_placeholders);
 

@@ -35,7 +35,7 @@ class LightHandler : public EntityHandler {
     // EntityHandler interface
  public:
     WebhookRequest *createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
-                                         const QVariantMap &placeholders, const QVariant &param) override;
+                                         const QVariantMap &placeholders, const QVariant &param) const override;
 
     void commandReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
                       QNetworkReply *reply) override;

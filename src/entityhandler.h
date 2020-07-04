@@ -26,6 +26,7 @@
 #include <QList>
 #include <QLoggingCategory>
 #include <QMap>
+#include <QMapIterator>
 #include <QMetaEnum>
 #include <QNetworkReply>
 #include <QObject>
@@ -57,16 +58,21 @@ class EntityHandler : public QObject {
     QList<WebhookEntity*> getEntities() const { return m_webhookEntities.values(); }
 
     /**
+     * @brief Returns a Java-style const iterator of the created webhook entities.
+     */
+    QMapIterator<QString, WebhookEntity*> entityIter() const;
+
+    /**
      * @brief Returns true if the given entity supports status requests.
      */
-    bool hasStatusCommand(const QString& entityId);
+    bool hasStatusCommand(const QString& entityId) const;
 
     /**
      * @brief Creates an internal status update request for the given entity identifier.
      * @return A newly created WebhookRequest object which must be deleted by the caller, or null if the entity does not
      * support status requests.
      */
-    WebhookRequest* createStatusRequest(const QString& entityId, const QVariantMap& placeholders);
+    WebhookRequest* createStatusRequest(const QString& entityId, const QVariantMap& placeholders) const;
 
     /**
      * @brief Handles the internal QNetworkReply from the given status request.
@@ -87,7 +93,7 @@ class EntityHandler : public QObject {
      * not be created.
      */
     virtual WebhookRequest* createCommandRequest(const QString& entityId, EntityInterface* entity, int command,
-                                                 const QVariantMap& placeholders, const QVariant& param) = 0;
+                                                 const QVariantMap& placeholders, const QVariant& param) const = 0;
 
     /**
      * @brief Handles the QNetworkReply from the given webhook request.

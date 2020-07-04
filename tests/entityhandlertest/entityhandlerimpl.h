@@ -13,7 +13,7 @@ class EntityHandlerImpl : public EntityHandler {
     // EntityHandler interface
  public:
     WebhookRequest *createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
-                                   const QVariantMap &placeholders, const QVariant &param) override {
+                                   const QVariantMap &placeholders, const QVariant &param) const override {
         Q_UNUSED(entityId)
         Q_UNUSED(entity)
         Q_UNUSED(command)

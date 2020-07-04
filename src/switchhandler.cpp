@@ -29,7 +29,7 @@ static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.switch");
 SwitchHandler::SwitchHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
 WebhookRequest *SwitchHandler::createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
-                                                    const QVariantMap &placeholders, const QVariant &param) {
+                                                    const QVariantMap &placeholders, const QVariant &param) const {
     Q_UNUSED(entity)
     Q_UNUSED(param)
 
