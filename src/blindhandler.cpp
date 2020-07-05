@@ -28,8 +28,8 @@ static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.blind");
 
 BlindHandler::BlindHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
-WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInterface *entity, int command,
-                                             const QVariantMap &placeholders, const QVariant &param) {
+WebhookRequest *BlindHandler::createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
+                                                   const QVariantMap &placeholders, const QVariant &param) const {
     QString         feature;
     QVariantMap     parameters(placeholders);
     BlindInterface *blindInterface = static_cast<BlindInterface *>(entity->getSpecificInterface());
@@ -56,7 +56,7 @@ WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInte
             break;
         default:
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
-            return Q_NULLPTR;
+            return nullptr;
     }
 
     qCDebug(CLASS_LC()) << entity->friendly_name() << "command:" << feature << ", parameter:" << param;
@@ -68,8 +68,8 @@ WebhookRequest *BlindHandler::prepareRequest(const QString &entityId, EntityInte
     return createRequest(feature, entityId, parameters);
 }
 
-void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
-                           QNetworkReply *reply) {
+void BlindHandler::commandReply(int command, EntityInterface *entity, const QVariant &param,
+                                const WebhookRequest *request, QNetworkReply *reply) {
     BlindInterface *blindInterface = static_cast<BlindInterface *>(entity->getSpecificInterface());
 
     int state = -1;
@@ -101,14 +101,7 @@ void BlindHandler::onReply(int command, EntityInterface *entity, const QVariant 
     updateEntity(entity, state, position, false);  // no conversion of UI position!
 
     if (reply->error() == QNetworkReply::NoError) {
-        QVariantMap values;
-        int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-        if (count > 0) {
-            if (CLASS_LC().isDebugEnabled()) {
-                qCDebug(CLASS_LC) << "Extracted response values:" << values;
-            }
-            updateEntity(entity, values);
-        }
+        handleResponseData(entity, request, reply);
     } else {
         // revert entity / UI state in case request failed
         // TODO(zehnm) enhance EntityInterface with refresh() option to simplify entity state -> UI reset.

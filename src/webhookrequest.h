@@ -26,7 +26,6 @@
 #include <QNetworkRequest>
 #include <QObject>
 
-#include "httpmethod.h"
 #include "webhookcommand.h"
 
 /**
@@ -34,8 +33,7 @@
  */
 class WebhookRequest : public QObject {
  public:
-    explicit WebhookRequest(QObject* parent = nullptr)
-        : QObject(parent), webhookCommand(Q_NULLPTR) {}
+    explicit WebhookRequest(QObject* parent = nullptr) : QObject(parent), webhookCommand(nullptr) {}
 
  public:
     const WebhookCommand* webhookCommand;

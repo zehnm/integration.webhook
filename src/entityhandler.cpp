@@ -28,12 +28,14 @@
 
 #include "jsonpath.h"
 
+const QString EntityHandler::STATUS_COMMAND = "STATUS_POLLING";
+
 EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, QObject *parent)
     : QObject(parent), m_entityType(entityType), m_baseUrl(baseUrl) {}
 
 int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVariantMap &headers) {
     int count = 0;
-    for (QVariant entityCfg : entityCfgList) {
+    for (const QVariant &entityCfg : entityCfgList) {
         QVariantMap    entityCfgMap = entityCfg.toMap();
         WebhookEntity *entity = new WebhookEntity(entityCfgMap.value("entity_id").toString(), entityType(),
                                                   entityCfgMap.value("friendly_name").toString(),
@@ -44,7 +46,7 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
             iter.next();
             QString  feature = iter.key();
             QVariant featureCfg = iter.value();
-            if (feature == "STATUS") {
+            if (feature == STATUS_COMMAND) {
                 // TODO(zehnm) handle STATUS
             } else {
                 entity->supportedFeatures.append(feature);
@@ -89,6 +91,28 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
     }
 
     return count;
+}
+
+QMapIterator<QString, WebhookEntity *> EntityHandler::entityIter() const {
+    return QMapIterator<QString, WebhookEntity *>(m_webhookEntities);
+}
+
+bool EntityHandler::hasStatusCommand(const QString &entityId) const {
+    WebhookEntity *entity = m_webhookEntities.value(entityId);
+    if (!entity) {
+        return false;
+    }
+    return entity->commands.contains(STATUS_COMMAND);
+}
+
+WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, const QVariantMap &placeholders) const {
+    return createRequest(STATUS_COMMAND, entityId, placeholders);
+}
+
+void EntityHandler::statusReply(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {
+    if (reply->error() == QNetworkReply::NoError) {
+        handleResponseData(entity, request, reply);
+    }
 }
 
 int EntityHandler::convertBrightnessToPercentage(float value) const {
@@ -152,13 +176,13 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
                                              const QVariantMap &placeholders) const {
     if (!m_webhookEntities.contains(entityId)) {
         qCWarning(logCategory()) << "Entity not found:" << entityId;
-        return Q_NULLPTR;
+        return nullptr;
     }
 
     WebhookEntity *entity = m_webhookEntities.value(entityId);
     if (!entity->commands.contains(commandName)) {
         qCWarning(logCategory()) << "Command" << commandName << "not defined for entity:" << entityId;
-        return Q_NULLPTR;
+        return nullptr;
     }
     WebhookCommand *command = entity->commands.value(commandName);
 
@@ -177,12 +201,25 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
         }
     }
 
-    for (QString headerName : command->headers.keys()) {
-        QString headerValue = resolveVariables(command->headers.value(headerName).toString(), placeholders);
-        request->networkRequest.setRawHeader(headerName.toUtf8(), headerValue.toUtf8());
+    QMapIterator<QString, QVariant> iter(command->headers);
+    while (iter.hasNext()) {
+        iter.next();
+        QString headerValue = resolveVariables(command->headers.value(iter.key()).toString(), placeholders);
+        request->networkRequest.setRawHeader(iter.key().toUtf8(), headerValue.toUtf8());
     }
 
     return request;
+}
+
+void EntityHandler::handleResponseData(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {
+    QVariantMap values;
+    int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
+    if (count > 0) {
+        if (logCategory().isDebugEnabled()) {
+            qCDebug(logCategory()) << "Extracted response values:" << values;
+        }
+        updateEntity(entity, values);
+    }
 }
 
 int EntityHandler::retrieveResponseValues(QNetworkReply *reply, const QMap<QString, QString> &mappings,

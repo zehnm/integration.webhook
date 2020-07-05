@@ -29,7 +29,7 @@
 #include <QObject>
 #include <QSslError>
 #include <QString>
-#include <QThread>
+#include <QTimer>
 #include <QVariantMap>
 
 #include "entityhandler.h"
@@ -39,7 +39,6 @@
 #include "yio-interface/entities/entityinterface.h"
 #include "yio-interface/notificationsinterface.h"
 #include "yio-interface/plugininterface.h"
-#include "yio-interface/yioapiinterface.h"
 #include "yio-plugin/integration.h"
 #include "yio-plugin/plugin.h"
 
@@ -80,14 +79,17 @@ class Webhook : public Integration {
     void leaveStandby() override;
 
  private:
-    void addAvailableEntities(const QList<WebhookEntity *> &entities);
-    void configureProxy(const QVariantMap& proxyCfg);
+    void           addAvailableEntities(const QList<WebhookEntity*>& entities);
+    void           configureProxy(const QVariantMap& proxyCfg);
+    QNetworkReply* sendWebhookRequest(WebhookRequest* request);
 
  private slots:  // NOLINT open issue: https://github.com/cpplint/cpplint/pull/99
     void ignoreSslErrors(QNetworkReply* reply, const QList<QSslError>& errors);
+    void statusUpdate();
 
  private:
     QNetworkAccessManager         m_networkManager;
     QMap<QString, EntityHandler*> m_handlers;
     QVariantMap                   m_placeholders;
+    QTimer*                       m_statusTimer;
 };

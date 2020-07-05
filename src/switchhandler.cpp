@@ -28,8 +28,8 @@ static Q_LOGGING_CATEGORY(CLASS_LC, "yio.intg.webhook.switch");
 
 SwitchHandler::SwitchHandler(const QString &baseUrl, QObject *parent) : EntityHandler("switch", baseUrl, parent) {}
 
-WebhookRequest *SwitchHandler::prepareRequest(const QString &entityId, EntityInterface *entity, int command,
-                                              const QVariantMap &placeholders, const QVariant &param) {
+WebhookRequest *SwitchHandler::createCommandRequest(const QString &entityId, EntityInterface *entity, int command,
+                                                    const QVariantMap &placeholders, const QVariant &param) const {
     Q_UNUSED(entity)
     Q_UNUSED(param)
 
@@ -44,11 +44,11 @@ WebhookRequest *SwitchHandler::prepareRequest(const QString &entityId, EntityInt
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
     }
 
-    return Q_NULLPTR;
+    return nullptr;
 }
 
-void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,
-                            QNetworkReply *reply) {
+void SwitchHandler::commandReply(int command, EntityInterface *entity, const QVariant &param,
+                                 const WebhookRequest *request, QNetworkReply *reply) {
     Q_UNUSED(param)
 
     int oldState = entity->state();
@@ -58,14 +58,7 @@ void SwitchHandler::onReply(int command, EntityInterface *entity, const QVariant
     }
 
     if (reply->error() == QNetworkReply::NoError) {
-        QVariantMap values;
-        int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-        if (count > 0) {
-            if (CLASS_LC().isDebugEnabled()) {
-                qCDebug(CLASS_LC) << "Extracted response values:" << values;
-            }
-            updateEntity(entity, values);
-        }
+        handleResponseData(entity, request, reply);
     } else {
         // revert entity / UI state in case request failed
         entity->setState(oldState);
@@ -91,7 +84,7 @@ void SwitchHandler::updateEntity(EntityInterface *entity, const QVariantMap &pla
     if (placeholders.contains("power")) {
         int power = placeholders.value("power").toInt();
         if (power >= 0 && entity->isSupported(SwitchDef::F_POWER)) {
-            qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "power:" << state;
+            qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "power:" << power;
             entity->updateAttrByIndex(SwitchDef::POWER, power);
         }
     }

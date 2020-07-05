@@ -41,7 +41,7 @@ Integration *WebhookPlugin::createIntegration(const QVariantMap &config, Entitie
 
 Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
                  YioAPIInterface *api, ConfigInterface *configObj, Plugin *plugin)
-    : Integration(config, entities, notifications, api, configObj, plugin) {
+    : Integration(config, entities, notifications, api, configObj, plugin), m_statusTimer(nullptr) {
     if (!config.contains(Integration::OBJ_DATA)) {
         qCCritical(m_logCategory) << "Missing configuration key" << Integration::OBJ_DATA;
         return;
@@ -68,10 +68,8 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
         configureProxy(map.value("proxy").toMap());
     }
 
-    qCDebug(m_logCategory) << "Created webhook for:" << baseUrl << "ignoreSSL:" << ignoreSsl;
-
     QVariantMap entitiesCfg = map.value("entities").toMap();
-    for (QVariantMap::const_iterator iter = entitiesCfg.cbegin(); iter != entitiesCfg.cend(); ++iter) {
+    for (auto iter = entitiesCfg.cbegin(); iter != entitiesCfg.cend(); ++iter) {
         EntityHandler *entityHandler = m_handlers.value(iter.key());
         if (entityHandler) {
             entityHandler->readEntities(iter.value().toList(), headers);
@@ -80,38 +78,59 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
         }
     }
 
-    for (EntityHandler *entityHandler : m_handlers) {
-        addAvailableEntities(entityHandler->getEntities());
+    for (const EntityHandler *entityHandler : qAsConst(m_handlers)) {
+        auto iter = entityHandler->entityIter();
+        while (iter.hasNext()) {
+            iter.next();
+            const WebhookEntity *e = iter.value();
+            addAvailableEntity(e->id, e->type, integrationId(), e->friendlyName, e->supportedFeatures);
+        }
     }
+
+    int statusPolling = map.value("status_polling", 30).toInt();
+    if (statusPolling > 1000) {
+        qCWarning(m_logCategory) << "Status polling interval is in seconds, but has a value > 1000!";
+    } else if (statusPolling < 0) {
+        statusPolling = 0;
+    }
+
+    if (statusPolling > 0) {
+        m_statusTimer = new QTimer(this);
+        m_statusTimer->setInterval(statusPolling * 1000);
+        QObject::connect(m_statusTimer, &QTimer::timeout, this, &Webhook::statusUpdate);
+    }
+
+    qCDebug(m_logCategory) << "Created webhook for:" << baseUrl << ", ignoreSSL:" << ignoreSsl
+                           << ", statusPolling:" << statusPolling * 1000;
 }
 
 void Webhook::connect() {
     setState(CONNECTING);
 
-    // TODO(zehnm) implement me, e.g. starting timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->start();
+    }
+
+    setState(CONNECTED);
 }
 
 void Webhook::disconnect() {
-    // TODO(zehnm) implement me, e.g. stopping timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->stop();
+    }
 
     setState(DISCONNECTED);
 }
 
 void Webhook::enterStandby() {
-    // TODO(zehnm) implement me, e.g. suspending timers
-    // ...
+    if (m_statusTimer) {
+        m_statusTimer->stop();
+    }
 }
 
 void Webhook::leaveStandby() {
-    // TODO(zehnm) implement me, e.g. restarting timers
-    // ...
-}
-
-void Webhook::addAvailableEntities(const QList<WebhookEntity *> &entities) {
-    for (WebhookEntity *e : entities) {
-        addAvailableEntity(e->id, e->type, integrationId(), e->friendlyName, e->supportedFeatures);
+    if (m_statusTimer) {
+        m_statusTimer->start();
     }
 }
 
@@ -145,25 +164,11 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
         return;
     }
 
-    WebhookRequest *request = entityHandler->prepareRequest(entityId, entity, command, m_placeholders, param);
-    if (!request) {
-        return;
-    }
-    Q_ASSERT(request->webhookCommand);
+    WebhookRequest *request = entityHandler->createCommandRequest(entityId, entity, command, m_placeholders, param);
 
-    QNetworkReply *reply;
-    switch (request->webhookCommand->method) {
-        case HttpMethod::POST:
-            reply = m_networkManager.post(request->networkRequest, request->body);
-            break;
-        case HttpMethod::PUT:
-            reply = m_networkManager.put(request->networkRequest, request->body);
-            break;
-        case HttpMethod::DELETE:
-            reply = m_networkManager.deleteResource(request->networkRequest);
-            break;
-        default:
-            reply = m_networkManager.get(request->networkRequest);
+    QNetworkReply *reply = sendWebhookRequest(request);
+    if (reply == nullptr) {
+        return;
     }
 
     QObject::connect(
@@ -179,11 +184,61 @@ void Webhook::sendCommand(const QString &type, const QString &entityId, int comm
                                          << "/" << reply->error() << "/" << reply->errorString();
             }
 
-            entityHandler->onReply(command, entity, param, request, reply);
+            entityHandler->commandReply(command, entity, param, request, reply);
         });
+}
+
+QNetworkReply *Webhook::sendWebhookRequest(WebhookRequest *request) {
+    if (!request) {
+        return nullptr;
+    }
+    Q_ASSERT(request->webhookCommand);
+
+    switch (request->webhookCommand->method) {
+        case HttpMethod::POST:
+            return m_networkManager.post(request->networkRequest, request->body);
+        case HttpMethod::PUT:
+            return m_networkManager.put(request->networkRequest, request->body);
+        case HttpMethod::DELETE:
+            return m_networkManager.deleteResource(request->networkRequest);
+        default:
+            return m_networkManager.get(request->networkRequest);
+    }
 }
 
 void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &errors) {
     qCDebug(m_logCategory) << "Ignoring SSL error:" << errors;
     reply->ignoreSslErrors();
+}
+
+void Webhook::statusUpdate() {
+    // Proof of concept only! Verify if this blocks the main thread for too long. Otherwise use a processing thread.
+    for (EntityHandler *handler : qAsConst(m_handlers)) {
+        QMapIterator<QString, WebhookEntity *> entityIter = handler->entityIter();
+        while (entityIter.hasNext()) {
+            entityIter.next();
+            const WebhookEntity *entity = entityIter.value();
+            if (handler->hasStatusCommand(entity->id)) {
+                WebhookRequest *statusRequest = handler->createStatusRequest(entity->id, m_placeholders);
+
+                QNetworkReply *reply = sendWebhookRequest(statusRequest);
+                if (reply == nullptr) {
+                    return;
+                }
+
+                QObject::connect(reply, &QNetworkReply::finished, this, [this, handler, entity, statusRequest, reply] {
+                    statusRequest->deleteLater();
+                    reply->deleteLater();
+
+                    if (reply->error() != QNetworkReply::NoError) {
+                        qCWarning(m_logCategory)
+                            << "Status request failed:" << entity->friendlyName << reply->url().url() << "/"
+                            << reply->error() << "/" << reply->errorString();
+                    }
+
+                    handler->statusReply(m_entities->getEntityInterface(entity->id), statusRequest, reply);
+                });
+            }
+        }
+    }
 }

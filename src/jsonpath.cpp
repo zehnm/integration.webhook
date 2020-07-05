@@ -45,7 +45,7 @@ QVariant JsonPath::value(const QString &path, QVariant defaultValue) const {
 
     QRegularExpression arrayRegEx("(\\w*)\\[(\\d+)\\]$");
 
-    for (auto segment : segments) {
+    for (const QString &segment : qAsConst(segments)) {
         QRegularExpressionMatch match = arrayRegEx.match(segment);
         if (match.hasMatch()) {
             QString objectName = match.captured(1);

@@ -2,6 +2,7 @@
     "_comment": "Test configuration for https://requestbin.com/r/en7n3554s0rbk",
     "base_url": "https://en7n3554s0rbk.x.pipedream.net/${ROOT}",
     "ssl_ignore": false,
+    "status_polling": 30,
     "placeholders": {
         "TOKEN": "secret123",
         "ROOT": "test",
@@ -26,7 +27,17 @@
             "friendly_name": "Simple switch 1",
             "commands": {
                 "ON": "${SWITCH-1}?state=1",
-                "OFF": "${SWITCH-1}?state=0"
+                "OFF": "${SWITCH-1}?state=0",
+                "STATUS_POLLING": {
+                    "url": "${SWITCH-1}/report",
+                    "response" : {
+                        "mappings": {
+                            "state_bool": ".relay",
+                            "power": ".power",
+                            "temperature_c": ".temperature"
+                        }
+                    }
+                }
             }
         },
         {
@@ -141,7 +152,7 @@
         "blind" : [
         {
             "entity_id": "webhook.blind.1",
-            "friendly_name": "Blind office",
+            "friendly_name": "Shelly 2.5 roller shutter",
             "attributes": {
                 "invert_position": true
             },
@@ -157,6 +168,14 @@
                 },
                 "POSITION": {
                     "url": "roller/0?go=to_pos&roller_pos=${position_percent}"
+                },
+                "STATUS_POLLING": {
+                    "url": "",
+                    "response" : {
+                        "mappings": {
+                            "position_percent": ".current_pos"
+                        }
+                    }
                 }
             }
         }

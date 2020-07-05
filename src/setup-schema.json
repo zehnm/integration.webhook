@@ -91,6 +91,13 @@
             "description": "Set true if you want to skip SSL verification",
             "default": false
         },
+        "status_polling": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Status polling intervall (sec)",
+            "description": "0 disables polling",
+            "default": 30
+        },
         "placeholders": {
             "type": "object",
             "title": "Key value placeholders for url, headers, body",

@@ -1,0 +1,28 @@
+{
+    "_comment": "Example configuration for myStrom switch in config.json section: integrations.webhook.data[n].data",
+    "base_url": "http://192.168.100.200",
+    "status_polling": 30,
+    "entities": {
+        "switch" : [
+        {
+            "entity_id": "webhook.switch.1",
+            "friendly_name": "myStrom Switch",
+            "commands": {
+                "ON": "/relay?state=1",
+                "OFF": "/relay?state=0",
+                "TOGGLE": "/toggle",
+                "STATUS_POLLING": {
+                    "url": "/report",
+                    "response" : {
+                        "mappings": {
+                            "state_bool": ".relay",
+                            "power": ".power",
+                            "temperature_c": ".temperature"
+                        }
+                    }
+                }
+            }
+        }
+        ]
+    }
+}
