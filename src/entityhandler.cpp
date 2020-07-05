@@ -28,7 +28,7 @@
 
 #include "jsonpath.h"
 
-const QString EntityHandler::STATUS_COMMAND = "wh-STATUS";
+const QString EntityHandler::STATUS_COMMAND = "STATUS_POLLING";
 
 EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, QObject *parent)
     : QObject(parent), m_entityType(entityType), m_baseUrl(baseUrl) {}

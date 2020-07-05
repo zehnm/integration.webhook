@@ -48,7 +48,7 @@ Supported features at the moment:
 
 - ON
 - OFF
-- TOGGLE
+- TOGGLE (currently not used in the remote-software app)
 - BRIGHTNESS
 - COLOR
 - COLORTEMP
@@ -74,7 +74,7 @@ Note: COLORTEMP is not yet supported in the UI afaik.
 
 - ON
 - OFF
-- TOGGLE
+- TOGGLE (currently not used in the remote-software app)
 
 Initial response mapping is implemented with support for the power attribute.
 
@@ -99,6 +99,7 @@ Initial response mapping is implemented with support for the power attribute.
 
 - [x] Response mapping  
   E.g. entity attributes like brightness etc.
+  - [ ] Parsing color value strings
 - [x] Status polling
 - [x] Blind entity
   - [x] Invert position option
@@ -138,3 +139,8 @@ Add a `webhook` configuration inside `integrations`:
 ```
 
 See [setup-example.json](setup-example.json) for an example `integrations.webhook.data.data` section.
+
+### Configuration Examples
+
+- [myStrom Switch](doc/mystrom_switch.json)
+- [Shelly 2.5 roller shutter](doc/shelly_2.5_roller_shutter.json)

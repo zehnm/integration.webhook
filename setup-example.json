@@ -28,7 +28,7 @@
             "commands": {
                 "ON": "${SWITCH-1}?state=1",
                 "OFF": "${SWITCH-1}?state=0",
-                "wh-STATUS": {
+                "STATUS_POLLING": {
                     "url": "${SWITCH-1}/report",
                     "response" : {
                         "mappings": {
@@ -169,7 +169,7 @@
                 "POSITION": {
                     "url": "roller/0?go=to_pos&roller_pos=${position_percent}"
                 },
-                "wh-STATUS": {
+                "STATUS_POLLING": {
                     "url": "",
                     "response" : {
                         "mappings": {

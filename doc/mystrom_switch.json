@@ -11,7 +11,7 @@
                 "ON": "/relay?state=1",
                 "OFF": "/relay?state=0",
                 "TOGGLE": "/toggle",
-                "wh-STATUS": {
+                "STATUS_POLLING": {
                     "url": "/report",
                     "response" : {
                         "mappings": {
