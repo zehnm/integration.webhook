@@ -8,8 +8,9 @@ Work in progress!
 It may crash at any time, leak memory, or render your YIO remote unresponsive.  
 The json configuration is not finalized and will most likely change!
 
-This repository might be included in the official YIO project, once basic features are implemented and the configuration is stable.  
-Until then the web-configurator is unsupported, it might partially work, or not at all.
+This repository might be included in the official YIO project in the future, once basic features are implemented and the configuration is stable.
+
+The web-configurator is unsupported, it might partially work, or not at all.
 
 ## Features
 
@@ -41,6 +42,10 @@ Supported features at the moment:
 - Response mapping of Json payload with a simplified JsonPath syntax.
   - Nested values: `foo.bar.x`
   - Array index: `foo.bars[2].y`
+- Optional device status polling
+  - Enabled with entity command named `STATUS_POLLING`
+  - Only active while screen is on (non-standby)
+  - Polling intervall is configurable. Default: 30s
 
 ## Entity Support
 
@@ -90,6 +95,7 @@ Initial response mapping is implemented with support for the power attribute.
 - CLOSE
 - STOP
 - POSITION
+  - Position can be inverted with `attributes.invert_posiion: true`
 
 #### Placeholders
 
@@ -106,6 +112,8 @@ Initial response mapping is implemented with support for the power attribute.
 - [ ] Remote entity
 - [ ] Climate entity
 - [ ] Media player entity
+- [ ] Full documentation
+- [ ] Support MQTT?
 
 ## Configuration
 
@@ -142,5 +150,9 @@ See [setup-example.json](setup-example.json) for an example `integrations.webhoo
 
 ### Configuration Examples
 
+Verified configuration examples:
 - [myStrom Switch](doc/mystrom_switch.json)
 - [Shelly 2.5 roller shutter](doc/shelly_2.5_roller_shutter.json)
+
+Do you have other working configurations you'd like to share?
+Please send them by email, GitHub issue or pull request and I will add it to the list.

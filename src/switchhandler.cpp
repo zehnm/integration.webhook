@@ -44,7 +44,7 @@ WebhookRequest *SwitchHandler::createCommandRequest(const QString &entityId, Ent
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
     }
 
-    return Q_NULLPTR;
+    return nullptr;
 }
 
 void SwitchHandler::commandReply(int command, EntityInterface *entity, const QVariant &param,

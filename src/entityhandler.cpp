@@ -176,13 +176,13 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
                                              const QVariantMap &placeholders) const {
     if (!m_webhookEntities.contains(entityId)) {
         qCWarning(logCategory()) << "Entity not found:" << entityId;
-        return Q_NULLPTR;
+        return nullptr;
     }
 
     WebhookEntity *entity = m_webhookEntities.value(entityId);
     if (!entity->commands.contains(commandName)) {
         qCWarning(logCategory()) << "Command" << commandName << "not defined for entity:" << entityId;
-        return Q_NULLPTR;
+        return nullptr;
     }
     WebhookCommand *command = entity->commands.value(commandName);
 

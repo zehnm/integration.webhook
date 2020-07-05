@@ -56,7 +56,7 @@ WebhookRequest *BlindHandler::createCommandRequest(const QString &entityId, Enti
             break;
         default:
             qCWarning(CLASS_LC) << "Unsupported command:" << command;
-            return Q_NULLPTR;
+            return nullptr;
     }
 
     qCDebug(CLASS_LC()) << entity->friendly_name() << "command:" << feature << ", parameter:" << param;

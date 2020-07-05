@@ -41,7 +41,7 @@ Integration *WebhookPlugin::createIntegration(const QVariantMap &config, Entitie
 
 Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, NotificationsInterface *notifications,
                  YioAPIInterface *api, ConfigInterface *configObj, Plugin *plugin)
-    : Integration(config, entities, notifications, api, configObj, plugin), m_statusTimer(Q_NULLPTR) {
+    : Integration(config, entities, notifications, api, configObj, plugin), m_statusTimer(nullptr) {
     if (!config.contains(Integration::OBJ_DATA)) {
         qCCritical(m_logCategory) << "Missing configuration key" << Integration::OBJ_DATA;
         return;
@@ -214,7 +214,7 @@ void Webhook::ignoreSslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 void Webhook::statusUpdate() {
     // Proof of concept only! Verify if this blocks the main thread for too long. Otherwise use a processing thread.
     for (EntityHandler *handler : qAsConst(m_handlers)) {
-        QMapIterator<QString, WebhookEntity*> entityIter = handler->entityIter();
+        QMapIterator<QString, WebhookEntity *> entityIter = handler->entityIter();
         while (entityIter.hasNext()) {
             entityIter.next();
             const WebhookEntity *entity = entityIter.value();

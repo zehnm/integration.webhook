@@ -19,7 +19,7 @@ class EntityHandlerImpl : public EntityHandler {
         Q_UNUSED(command)
         Q_UNUSED(placeholders)
         Q_UNUSED(param)
-        return Q_NULLPTR;
+        return nullptr;
     }
 
     void commandReply(int command, EntityInterface *entity, const QVariant &param, const WebhookRequest *request,

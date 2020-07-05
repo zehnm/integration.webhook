@@ -39,7 +39,6 @@
 #include "yio-interface/entities/entityinterface.h"
 #include "yio-interface/notificationsinterface.h"
 #include "yio-interface/plugininterface.h"
-#include "yio-interface/yioapiinterface.h"
 #include "yio-plugin/integration.h"
 #include "yio-plugin/plugin.h"
 
