@@ -16,8 +16,7 @@
                     "response" : {
                         "mappings": {
                             "state_bool": ".relay",
-                            "power": ".power",
-                            "temperature_c": ".temperature"
+                            "power": ".power"
                         }
                     }
                 }
