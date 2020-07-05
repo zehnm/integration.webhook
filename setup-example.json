@@ -27,7 +27,17 @@
             "friendly_name": "Simple switch 1",
             "commands": {
                 "ON": "${SWITCH-1}?state=1",
-                "OFF": "${SWITCH-1}?state=0"
+                "OFF": "${SWITCH-1}?state=0",
+                "wh-STATUS": {
+                    "url": "${SWITCH-1}/report",
+                    "response" : {
+                        "mappings": {
+                            "state_bool": ".relay",
+                            "power": ".power",
+                            "temperature_c": ".temperature"
+                        }
+                    }
+                }
             }
         },
         {
@@ -142,7 +152,7 @@
         "blind" : [
         {
             "entity_id": "webhook.blind.1",
-            "friendly_name": "Blind office",
+            "friendly_name": "Shelly 2.5 roller shutter",
             "attributes": {
                 "invert_position": true
             },
@@ -158,6 +168,14 @@
                 },
                 "POSITION": {
                     "url": "roller/0?go=to_pos&roller_pos=${position_percent}"
+                },
+                "wh-STATUS": {
+                    "url": "",
+                    "response" : {
+                        "mappings": {
+                            "position_percent": ".current_pos"
+                        }
+                    }
                 }
             }
         }

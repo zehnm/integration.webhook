@@ -84,7 +84,7 @@ void SwitchHandler::updateEntity(EntityInterface *entity, const QVariantMap &pla
     if (placeholders.contains("power")) {
         int power = placeholders.value("power").toInt();
         if (power >= 0 && entity->isSupported(SwitchDef::F_POWER)) {
-            qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "power:" << state;
+            qCDebug(CLASS_LC()) << "Update" << entity->friendly_name() << "power:" << power;
             entity->updateAttrByIndex(SwitchDef::POWER, power);
         }
     }

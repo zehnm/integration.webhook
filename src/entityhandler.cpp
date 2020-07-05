@@ -28,6 +28,8 @@
 
 #include "jsonpath.h"
 
+const QString EntityHandler::STATUS_COMMAND = "wh-STATUS";
+
 EntityHandler::EntityHandler(const QString &entityType, const QString &baseUrl, QObject *parent)
     : QObject(parent), m_entityType(entityType), m_baseUrl(baseUrl) {}
 
@@ -44,7 +46,7 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
             iter.next();
             QString  feature = iter.key();
             QVariant featureCfg = iter.value();
-            if (feature == "STATUS") {
+            if (feature == STATUS_COMMAND) {
                 // TODO(zehnm) handle STATUS
             } else {
                 entity->supportedFeatures.append(feature);
@@ -100,11 +102,11 @@ bool EntityHandler::hasStatusCommand(const QString &entityId) const {
     if (!entity) {
         return false;
     }
-    return entity->commands.contains("STATUS");
+    return entity->commands.contains(STATUS_COMMAND);
 }
 
 WebhookRequest *EntityHandler::createStatusRequest(const QString &entityId, const QVariantMap &placeholders) const {
-    return createRequest("STATUS", entityId, placeholders);
+    return createRequest(STATUS_COMMAND, entityId, placeholders);
 }
 
 void EntityHandler::statusReply(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {

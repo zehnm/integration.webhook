@@ -134,6 +134,11 @@ class EntityHandler : public QObject {
     }
 
  protected:
+    /**
+     * @brief Internal status command identifier
+     */
+    static const QString STATUS_COMMAND;
+
     QString m_entityType;
     QString m_baseUrl;
 

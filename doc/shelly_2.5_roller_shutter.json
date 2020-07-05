@@ -1,0 +1,38 @@
+{
+    "_comment": "Example configuration for Shelly 2.5 roller shutter in config.json section: integrations.webhook.data[n].data",
+    "base_url": "http://admin:admin@192.168.100.200/roller/0",
+    "status_polling": 30,
+    "entities": {
+        "blind" : [
+        {
+            "entity_id": "webhook.blind.1",
+            "friendly_name": "Shelly 2.5 roller shutter",
+            "attributes": {
+                "invert_position": true
+            },
+            "commands": {
+                "OPEN": {
+                    "url": "?go=open"
+                },
+                "CLOSE": {
+                    "url": "?go=close"
+                },
+                "STOP": {
+                    "url": "?go=stop"
+                },
+                "POSITION": {
+                    "url": "?go=to_pos&roller_pos=${position_percent}"
+                },
+                "wh-STATUS": {
+                    "url": "",
+                    "response" : {
+                        "mappings": {
+                            "position_percent": ".current_pos"
+                        }
+                    }
+                }
+            }
+        }
+        ]
+    }
+}
