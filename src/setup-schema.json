@@ -5,6 +5,10 @@
     "title": "YIO Integration Webhook Schema",
     "description": "Required data points to set up a Webhook integration.",
     "definitions": {
+        "temp_unit": {
+            "type": "string",
+            "enum": [ "CELSIUS", "FAHRENHEIT" ]
+        },
         "headers": {
             "type": "object",
             "title": "Http headers for all commands",
@@ -55,7 +59,7 @@
                                     "type": "object",
                                     "title": "Response mappings",
                                     "description": "JSON payload mapping to entity attributes with JsonPath.",
-                                    "propertyNames": {"enum": ["state_bool", "state_bin", "power", "brightness_percent", "color_temp", "color_r", "color_g", "color_b", "color_h", "color_s", "color_v", "position_percent"]},
+                                    "propertyNames": {"enum": ["state_bool", "state_bin", "power", "brightness_percent", "color_temp", "color_r", "color_g", "color_b", "color_h", "color_s", "color_v", "position_percent", "target_temp", "current_temp"]},
                                     "patternProperties": {
                                       "": { "type": "string" }
                                     }
@@ -221,6 +225,53 @@
                             "commands": {
                                 "type": "object",
                                 "propertyNames": { "enum": [ "OPEN", "CLOSE", "STOP", "POSITION", "STATUS_POLLING" ] },
+                                "patternProperties": {
+                                  "": { "$ref": "#/definitions/command" }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                            "entity_id",
+                            "friendly_name",
+                            "commands"
+                        ]
+                    }
+                },
+                "climate": {
+                    "type": "array",
+                    "title": "Climate items",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "entity_id": {
+                                "type": "string"
+                            },
+                            "friendly_name": {
+                                "type": "string"
+                            },
+                            "attributes": {
+                                "type": "object",
+                                "properties": {
+                                    "temp_unit": { "$ref": "#/definitions/temp_unit" },
+                                    "min_temp": {
+                                        "type": "integer"
+                                    },
+                                    "max_temp": {
+                                        "type": "integer"
+                                    },
+                                    "target_temp": {
+                                        "type": "integer"
+                                    },
+                                    "current_temp": {
+                                        "type": "integer"
+                                    }
+                                }
+                            },
+                            "commands": {
+                                "type": "object",
+                                "propertyNames": { "enum": [ "ON", "OFF", "HEAT", "COOL", "TARGET_TEMPERATURE", "STATUS_POLLING" ] },
                                 "patternProperties": {
                                   "": { "$ref": "#/definitions/command" }
                                 },
