@@ -212,9 +212,12 @@ WebhookRequest *EntityHandler::createRequest(const QString &commandName, const Q
 }
 
 void EntityHandler::handleResponseData(EntityInterface *entity, const WebhookRequest *request, QNetworkReply *reply) {
+    if (request->webhookCommand->responseMappings.isEmpty()) {
+        return;
+    }
+
     QVariantMap values;
-    int         count = retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values);
-    if (count > 0) {
+    if (retrieveResponseValues(reply, request->webhookCommand->responseMappings, &values) > 0) {
         if (logCategory().isDebugEnabled()) {
             qCDebug(logCategory()) << "Extracted response values:" << values;
         }
@@ -224,9 +227,19 @@ void EntityHandler::handleResponseData(EntityInterface *entity, const WebhookReq
 
 int EntityHandler::retrieveResponseValues(QNetworkReply *reply, const QMap<QString, QString> &mappings,
                                           QVariantMap *values) {
+    // check optional Content-Length if body parsing can be skipped
+    // https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+    QVariant length = reply->header(QNetworkRequest::ContentLengthHeader);
+    if (length.isValid() && length.toUInt() == 0) {
+        return 0;
+    }
+
     QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
     if (contentType.startsWith("application/json")) {
         QJsonDocument jsonDoc = QJsonDocument::fromJson(reply->readAll());
+        if (jsonDoc.isNull() || jsonDoc.isEmpty()) {
+            return 0;
+        }
         return retrieveResponseValues(jsonDoc, mappings, values);
     }
 
