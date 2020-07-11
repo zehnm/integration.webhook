@@ -26,6 +26,7 @@
 #include <QtDebug>
 
 #include "blindhandler.h"
+#include "climatehandler.h"
 #include "lighthandler.h"
 #include "switchhandler.h"
 
@@ -55,6 +56,7 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
     m_placeholders = map.value("placeholders").toMap();
 
     m_handlers.insert("blind", new BlindHandler(baseUrl, this));
+    m_handlers.insert("climate", new ClimateHandler(baseUrl, this));
     m_handlers.insert("light", new LightHandler(baseUrl, this));
     m_handlers.insert("switch", new SwitchHandler(baseUrl, this));
 
@@ -107,7 +109,14 @@ Webhook::Webhook(const QVariantMap &config, EntitiesInterface *entities, Notific
 void Webhook::connect() {
     setState(CONNECTING);
 
+    for (EntityHandler *entityHandler : qAsConst(m_handlers)) {
+        entityHandler->initialize(m_entities);
+    }
+
     if (m_statusTimer) {
+        // update immediately
+        QTimer::singleShot(0, this, &Webhook::statusUpdate);
+        // and periodically
         m_statusTimer->start();
     }
 

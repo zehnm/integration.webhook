@@ -178,6 +178,50 @@
                 }
             }
         }
+        ],
+        "climate" : [
+        {
+            "entity_id": "webhook.climate.1",
+            "friendly_name": "Test climate control",
+            "attributes": {
+                "temp_unit": "CELSIUS",
+                "min_temp": 16,
+                "max_temp" : 30,
+                "target_temp": 20,
+                "current_temp": 20
+            },
+            "commands": {
+                "OFF": {
+                    "url": "climate?state=off",
+                    "method": "POST"
+                },
+                "ON": {
+                    "url": "climate?state=on",
+                    "method": "POST"
+                },
+                "COOL": {
+                    "url": "climate?state=cool",
+                    "method": "POST"
+                },
+                "HEAT": {
+                    "url": "climate?state=heat",
+                    "method": "POST"
+                },
+                "TARGET_TEMPERATURE": {
+                    "url": "climate?set_temperature=${target_temp}",
+                    "method": "POST"
+                },
+                "STATUS_POLLING": {
+                    "url": "climate",
+                    "response" : {
+                        "mappings": {
+                            "target_temp": ".set_temperature",
+                            "current_temp": ".temperature"
+                        }
+                    }
+                }
+            }
+        }
         ]
     }
 }

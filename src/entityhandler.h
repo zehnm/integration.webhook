@@ -36,6 +36,7 @@
 
 #include "webhookentity.h"
 #include "webhookrequest.h"
+#include "yio-interface/entities/entitiesinterface.h"
 #include "yio-interface/entities/entityinterface.h"
 
 class EntityHandler : public QObject {
@@ -61,6 +62,13 @@ class EntityHandler : public QObject {
      * @brief Returns a Java-style const iterator of the created webhook entities.
      */
     QMapIterator<QString, WebhookEntity*> entityIter() const;
+
+    /**
+     * @brief Optional enitity initialization, called after the created entities have been added to the app.
+     * @details This allows for example to set default values stored in the configuration which cannot be retrieved by a
+     * status update.
+     */
+    virtual void initialize(EntitiesInterface* entities);
 
     /**
      * @brief Returns true if the given entity supports status requests.
@@ -108,6 +116,16 @@ class EntityHandler : public QObject {
 
  protected:
     virtual const QLoggingCategory& logCategory() const = 0;
+
+    /**
+     * @brief Optional hook when a WebhookEntity was read from the configuration to further customize it.
+     * @return true to include the entity, false to filter it out
+     */
+    virtual bool onWebhookEntityRead(const QVariantMap& entityCfgMap, WebhookEntity* entity) {
+        Q_UNUSED(entityCfgMap)
+        Q_UNUSED(entity)
+        return true;
+    }
 
     QUrl    buildUrl(const QVariant& commandUrl, const QVariantMap& placeholders) const;
     int     convertBrightnessToPercentage(float value) const;

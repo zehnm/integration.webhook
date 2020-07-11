@@ -99,7 +99,31 @@ Initial response mapping is implemented with support for the power attribute.
 
 #### Placeholders
 
+- state_bool
+- state_bin
 - position_percent
+
+### Climate
+
+- OFF
+- ON
+- HEAT
+- COOL
+- TARGET_TEMPERATURE
+
+#### Attributes
+
+Attributes are used to configure the min and max temperature range, as well as the initial values.
+
+- min_temp
+- max_temp
+- target_temp
+- current_temp
+
+#### Placeholders
+
+- state
+- target_temp
 
 ## TODOs
 
@@ -110,7 +134,8 @@ Initial response mapping is implemented with support for the power attribute.
 - [x] Blind entity
   - [x] Invert position option
 - [ ] Remote entity
-- [ ] Climate entity
+- [x] Climate entity
+  - [ ] Unit conversion between Fahrenheit and Celsius
 - [ ] Media player entity
 - [ ] Full documentation
 - [ ] Support MQTT?

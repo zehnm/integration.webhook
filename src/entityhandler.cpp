@@ -46,9 +46,7 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
             iter.next();
             QString  feature = iter.key();
             QVariant featureCfg = iter.value();
-            if (feature == STATUS_COMMAND) {
-                // TODO(zehnm) handle STATUS
-            } else {
+            if (feature != STATUS_COMMAND) {
                 entity->supportedFeatures.append(feature);
             }
 
@@ -86,8 +84,10 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
             entity->commands.insert(feature, command);
         }
 
-        count++;
-        m_webhookEntities.insert(entity->id, entity);
+        if (onWebhookEntityRead(entityCfgMap, entity)) {
+            count++;
+            m_webhookEntities.insert(entity->id, entity);
+        }
     }
 
     return count;
@@ -95,6 +95,18 @@ int EntityHandler::readEntities(const QVariantList &entityCfgList, const QVarian
 
 QMapIterator<QString, WebhookEntity *> EntityHandler::entityIter() const {
     return QMapIterator<QString, WebhookEntity *>(m_webhookEntities);
+}
+
+void EntityHandler::initialize(EntitiesInterface *entities) {
+    // transfer entity attributes to configure entity or initialize values
+    QMapIterator<QString, WebhookEntity *> iter = entityIter();
+    while (iter.hasNext()) {
+        iter.next();
+        const WebhookEntity *webhook = iter.value();
+
+        EntityInterface *entity = entities->getEntityInterface(webhook->id);
+        updateEntity(entity, webhook->attributes);
+    }
 }
 
 bool EntityHandler::hasStatusCommand(const QString &entityId) const {
