@@ -57,7 +57,7 @@ unix {
     INTG_GIT_VERSION = "?"
 }
 
-QMAKE_SUBSTITUTES += webhook.json.in version.txt.in
+QMAKE_SUBSTITUTES += webhook.json.in ../version.txt.in
 # output path must be included for the output file from QMAKE_SUBSTITUTES
 INCLUDEPATH += $$OUT_PWD
 HEADERS  += webhook.h \
@@ -95,7 +95,6 @@ unix {
 
 DISTFILES += \
     setup-schema.json \
-    version.txt.in \
     webhook.json.in \
     README.md
 
