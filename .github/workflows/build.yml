@@ -11,7 +11,6 @@
 
   env:
     APP_NAME: YIO-integration.webhook
-    APP_ARCHITECTURE: RPi0
     PROJECT_NAME: integration.webhook
     HASH_FILENAME: yio-integration-webhook.hash
 
@@ -23,14 +22,14 @@
         matrix:
           config:
           - {
-              name: "remote-os v0.x Build", artifact: "RPi0-release",
-              qmake-args: "CONFIG+=release",
-              build-image: "zehnm/yio-crosscompile-action:1.1.0"
-            }
-          - {
               name: "remote-os v1.x Build", artifact: "RPi0-Qt5.12.8",
               qmake-args: "CONFIG+=release",
               build-image: "zehnm/yio-crosscompile-action:2.0.0"
+            }
+          - {
+              name: "remote-os v2.0.x Build", artifact: "RPi0-Qt5.15.2",
+              qmake-args: "CONFIG+=release",
+              build-image: "zehnm/yio-crosscompile-action:3.0.0"
             }
 
       steps:

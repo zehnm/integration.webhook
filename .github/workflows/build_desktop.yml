@@ -21,6 +21,7 @@ env:
   APP_PRO: webhook.pro
   APP_NAME: libwebhook
   PROJECT_NAME: integration.webhook
+  PLUGIN_METAFILE: webhook.json
   # Build artifact output path. Used to set project specific YIO_BIN env var in 'qt_creator' step.
   BIN_OUTPUT_PATH: "binaries"
   DEBUG_OUTPUT: "false"
@@ -357,6 +358,9 @@ jobs:
           message(FATAL_ERROR "Build failed: bad exit status")
         endif()
 
+        execute_process(
+          COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/$ENV{PLUGIN_METAFILE} $ENV{YIO_BIN}
+        )
         execute_process(
           COMMAND cp $ENV{GITHUB_WORKSPACE}/$ENV{PROJECT_NAME}/version.txt $ENV{YIO_BIN}
         )
