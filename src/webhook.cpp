@@ -30,7 +30,7 @@
 #include "lighthandler.h"
 #include "switchhandler.h"
 
-WebhookPlugin::WebhookPlugin() : Plugin("webhook", USE_WORKER_THREAD) {}
+WebhookPlugin::WebhookPlugin() : Plugin("yio.plugin.webhook", USE_WORKER_THREAD) {}
 
 Integration *WebhookPlugin::createIntegration(const QVariantMap &config, EntitiesInterface *entities,
                                               NotificationsInterface *notifications, YioAPIInterface *api,
